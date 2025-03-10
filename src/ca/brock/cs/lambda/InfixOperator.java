@@ -8,7 +8,6 @@ public enum InfixOperator {
     DIVIDE("/", 2, true),
     AND("and", 2, false),
     OR("or", 2, false),
-    NOT("not", 1, false),
     EQUALS("=", 2, false),
     LESS_THAN("<=", 2, false),
 
