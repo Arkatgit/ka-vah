@@ -11,6 +11,14 @@ public class Abstraction extends Term {
         this.body = body;
     }
 
+    public String getParameter() {
+        return parameter;
+    }
+
+    public Term getBody() {
+        return body;
+    }
+
     @Override
     public String toStringPrec(int prec) {
         String result =  "λ" + parameter + ". " + body.toStringPrec(precedence);

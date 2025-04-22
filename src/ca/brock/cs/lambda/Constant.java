@@ -10,6 +10,9 @@ public class Constant extends Term {
         this.operator = InfixOperator.fromSymbol(value);
     }
 
+    public String getValue() {
+        return value;
+    }
 
     @Override
     public String toStringPrec(int prec) {

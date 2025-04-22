@@ -12,6 +12,16 @@ public class Conditional extends Term {
         falseBranch = f;
     }
 
+    public Term getCondition() {
+        return condition;
+    }
+    public Term getTrueBranch(){
+        return trueBranch;
+    }
+    public Term getFalseBranch()
+    {
+        return falseBranch;
+    }
     @Override
     public String toStringPrec(int prec)
     {

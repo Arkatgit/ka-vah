@@ -12,6 +12,13 @@ public class Equal extends Term {
         right = r;
     }
 
+    public Term getLeft(){
+        return left;
+    }
+    public Term getRight(){
+        return right;
+    }
+
     @Override
     public String toStringPrec(int prec)
     {

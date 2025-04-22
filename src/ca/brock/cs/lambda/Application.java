@@ -11,6 +11,13 @@ public class Application extends Term {
         this.argument = argument;
     }
 
+    public Term getFunction() {
+        return function;
+    }
+
+    public Term getArgument(){
+        return argument;
+    }
     @Override
     public String toStringPrec(int prec) {
         // Case 1: Handle (* t) -> Application(Application(Constant("flip"), Constant("*")), r)

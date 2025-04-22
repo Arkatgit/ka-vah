@@ -7,6 +7,10 @@ public class Variable extends Term {
         this.name = name;
     }
 
+    public String getName() {
+        return name;
+    }
+
     @Override
     public String toStringPrec(int prec) {
         return name;

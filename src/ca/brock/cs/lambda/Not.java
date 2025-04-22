@@ -7,6 +7,10 @@ public class Not extends Term {
         operand = op;
     }
 
+    public Term getOperand() {
+        return operand;
+    }
+
     @Override
     public String toStringPrec(int prec)
     {

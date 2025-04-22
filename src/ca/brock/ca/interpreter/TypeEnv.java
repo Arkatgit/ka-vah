@@ -3,7 +3,6 @@ package ca.brock.ca.interpreter;
 import java.util.HashMap;
 import java.util.Map;
 
-// Type environment for storing type variable bindings
 public class TypeEnv {
     private Map<TVar, Type> bindings;
 
@@ -21,6 +20,11 @@ public class TypeEnv {
 
     public boolean contains(TVar var) {
         return bindings.containsKey(var);
+    }
+
+    // Add this method to expose the bindings map
+    public Map<TVar, Type> getBindings() {
+        return new HashMap<>(bindings); // Return a copy for immutability
     }
 
     @Override

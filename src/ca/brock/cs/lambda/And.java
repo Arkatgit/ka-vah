@@ -10,6 +10,13 @@ public class And extends Term {
         left = l;
         right = r;
     }
+    public Term getLeft() {
+        return left;
+    }
+
+    public Term getRight() {
+        return right;
+    }
     @Override
     public String toStringPrec(int prec)
     {

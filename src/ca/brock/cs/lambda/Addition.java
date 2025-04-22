@@ -5,6 +5,14 @@ public class Addition extends Term {
     private Term right;
     public static final int precedence = 10;
 
+    public Term getLeft() {
+        return left;
+    }
+
+    public Term getRight() {
+        return right;
+    }
+
     public Addition(Term l, Term r){
         left = l ;
         right = r;
