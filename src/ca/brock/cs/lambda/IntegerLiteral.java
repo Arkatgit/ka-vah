@@ -1,5 +1,10 @@
 package ca.brock.cs.lambda;
 
+import ca.brock.ca.interpreter.TVar;
+import ca.brock.ca.interpreter.Type;
+
+import java.util.Map;
+
 public class IntegerLiteral extends Term {
     private int value;
 
@@ -11,5 +16,9 @@ public class IntegerLiteral extends Term {
     @Override
     public String toStringPrec(int prec) {
         return Integer.toString(value);
+    }
+    @Override
+    public void type(Map<String, Type> env) {
+        type = new TVar("Int");
     }
 }

@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class TypeEnv {
-    private Map<TVar, Type> bindings;
+    private final Map<TVar, Type> bindings;
 
     public TypeEnv() {
         this.bindings = new HashMap<>();
@@ -15,16 +15,23 @@ public class TypeEnv {
     }
 
     public Type lookup(TVar var) {
-        return bindings.get(var);
+        Type type = bindings.get(var);
+        if (type instanceof TVar && bindings.containsKey(type)) {
+            return lookup((TVar) type); // Follow transitive substitution
+        }
+        return type;
     }
 
     public boolean contains(TVar var) {
         return bindings.containsKey(var);
     }
 
-    // Add this method to expose the bindings map
     public Map<TVar, Type> getBindings() {
-        return new HashMap<>(bindings); // Return a copy for immutability
+        return new HashMap<>(bindings); // Defensive copy
+    }
+
+    public void clear() {
+        bindings.clear();
     }
 
     @Override

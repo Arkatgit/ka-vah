@@ -1,11 +1,22 @@
 package ca.brock.ca.interpreter;
 
-// Type variable (e.g., α, β)
 public class TVar extends Type {
+    private static int nextVarId = 0;
+    private static int nextGenericId = 0;
     private String name;
 
     public TVar(String name) {
         this.name = name;
+    }
+
+    // New constructor for fresh variables
+    public static TVar fresh() {
+        return new TVar("a" + nextVarId++);
+    }
+
+    // New constructor for specific type variables
+    public static TVar named(String prefix) {
+        return new TVar(prefix + nextVarId++);
     }
 
     public String getName() {
@@ -14,7 +25,7 @@ public class TVar extends Type {
 
     @Override
     public String toString() {
-        return name;
+       return name;
     }
 
     @Override

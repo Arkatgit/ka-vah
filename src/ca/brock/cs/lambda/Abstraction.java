@@ -1,5 +1,12 @@
 package ca.brock.cs.lambda;
 
+import ca.brock.ca.interpreter.FType;
+import ca.brock.ca.interpreter.TVar;
+import ca.brock.ca.interpreter.Type;
+
+import java.util.HashMap;
+import java.util.Map;
+
 public class Abstraction extends Term {
     private String parameter;
     private Term body;
@@ -27,4 +34,13 @@ public class Abstraction extends Term {
         }
         return result;
     }
+    @Override
+    public void type(Map<String, Type> env) {
+        TVar paramType = TVar.fresh();
+        Map<String, Type> newEnv = new HashMap<>(env);
+        newEnv.put(parameter, paramType);
+        body.type(newEnv);
+        type = new FType(paramType, body.getType());
+    }
+
 }

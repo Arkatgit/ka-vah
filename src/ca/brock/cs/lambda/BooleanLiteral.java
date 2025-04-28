@@ -1,6 +1,11 @@
 package ca.brock.cs.lambda;
 
-    public class BooleanLiteral extends Term {
+import ca.brock.ca.interpreter.TVar;
+import ca.brock.ca.interpreter.Type;
+
+import java.util.Map;
+
+public class BooleanLiteral extends Term {
         private boolean value;
 
         public BooleanLiteral(boolean v)
@@ -14,4 +19,8 @@ package ca.brock.cs.lambda;
            return value? "True" : "False";
         }
 
+        @Override
+        public void type(Map<String, Type> env) {
+            type = new TVar("Bool");
+        }
     }
