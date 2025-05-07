@@ -1,5 +1,6 @@
 package ca.brock.cs.lambda;
 
+import ca.brock.ca.interpreter.TVar;
 import ca.brock.ca.interpreter.Type;
 import ca.brock.ca.interpreter.TypeError;
 
@@ -22,11 +23,14 @@ public class Variable extends Term {
     }
 
     @Override
-    public void type(Map<String, Type> env) {
+    protected Type computeType(Map<String, Type> env) {
         if (!env.containsKey(name)) {
-            throw new TypeError("Unbound variable: " + name);
+            // For free variables, create a fresh type variable
+            TVar fresh = TVar.fresh();
+            env.put(name, fresh);
+            return fresh;
         }
-        type = env.get(name);
+        return env.get(name);
     }
 
 }

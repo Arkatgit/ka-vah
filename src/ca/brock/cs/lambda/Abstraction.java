@@ -35,12 +35,17 @@ public class Abstraction extends Term {
         return result;
     }
     @Override
-    public void type(Map<String, Type> env) {
-        TVar paramType = TVar.fresh();
+    protected Type computeType(Map<String, Type> env) {
+        // Create new environment with parameter binding
         Map<String, Type> newEnv = new HashMap<>(env);
+        TVar paramType = TVar.fresh();
         newEnv.put(parameter, paramType);
+
+        // Type the body with the new environment
         body.type(newEnv);
-        type = new FType(paramType, body.getType());
+        Type bodyType = body.getType();
+
+        return new FType(paramType, bodyType);
     }
 
 }

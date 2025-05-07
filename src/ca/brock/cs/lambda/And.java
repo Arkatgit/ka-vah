@@ -31,20 +31,18 @@ public class And extends Term {
     }
 
     @Override
-    public void type(Map<String, Type> env) {
+    protected Type computeType(Map<String, Type> env) {
         left.type(env);
         right.type(env);
 
-        Unifier unifier = new Unifier();
-        Map<String, Type> sub1 = unifier.unify(left.getType(), new TVar("Bool"));
-        if (sub1 == null) throw new TypeError("Left operand must be Bool");
+        Type leftType = left.getType();
+        Type rightType = right.getType();
 
-        Type rightType = Unifier.applySubstitution(right.getType(), sub1);
-        Map<String, Type> sub2 = unifier.unify(rightType, new TVar("Bool"));
-        if (sub2 == null) throw new TypeError("Right operand must be Bool");
+        if (!leftType.equals(new ca.brock.ca.interpreter.Constant("Bool")) || !rightType.equals(new ca.brock.ca.interpreter.Constant("Bool"))) {
+            throw new RuntimeException("AND operands must be boolean");
+        }
 
-        sub1.putAll(sub2);
-        type = new TVar("Bool");
+        return new ca.brock.ca.interpreter.Constant("Bool");
     }
 
 }

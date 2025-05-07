@@ -36,22 +36,24 @@ public class Conditional extends Term {
             "else " +  falseBranch.toStringPrec(prec);
     }
     @Override
-    public void type(Map<String, Type> env) {
+    protected Type computeType(Map<String, Type> env) {
         condition.type(env);
         trueBranch.type(env);
         falseBranch.type(env);
 
-        Unifier unifier = new Unifier();
-        Map<String, Type> sub1 = unifier.unify(condition.getType(), new TVar("Bool"));
-        if (sub1 == null) throw new TypeError("Condition must be Bool");
+        Type condType = condition.getType();
+        Type thenType = trueBranch.getType();
+        Type elseType = falseBranch.getType();
 
-        Type trueType = Unifier.applySubstitution(trueBranch.getType(), sub1);
-        Type falseType = Unifier.applySubstitution(falseBranch.getType(), sub1);
+        if (!condType.equals(new ca.brock.ca.interpreter.Constant("Bool"))) {
+            throw new RuntimeException("Condition must be boolean");
+        }
 
-        Map<String, Type> sub2 = unifier.unify(trueType, falseType);
-        if (sub2 == null) throw new TypeError("Branches must have same type");
+        if (!thenType.equals(elseType)) {
+            throw new RuntimeException("Branches must have same type");
+        }
 
-        type = Unifier.applySubstitution(trueType, sub2);
+        return thenType;
     }
 
 }

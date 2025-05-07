@@ -1,5 +1,6 @@
 package ca.brock.cs.lambda;
 
+import ca.brock.ca.interpreter.Constant;
 import ca.brock.ca.interpreter.TVar;
 import ca.brock.ca.interpreter.Type;
 
@@ -19,8 +20,8 @@ public class BooleanLiteral extends Term {
            return value? "True" : "False";
         }
 
-        @Override
-        public void type(Map<String, Type> env) {
-            type = new TVar("Bool");
-        }
+    @Override
+    protected Type computeType(Map<String, Type> env) {
+        return new Constant("Bool");
     }
+}

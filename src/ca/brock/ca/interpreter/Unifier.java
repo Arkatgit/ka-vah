@@ -10,17 +10,30 @@ public class Unifier {
         this.env = new TypeEnv();
     }
 
-    // Unify two types and return substitution map or null
     public Map<String, Type> unify(Type t1, Type t2) {
-        this.env.clear(); // Fresh start for every unify call
-
+        env.clear();
         boolean success = unifyInternal(t1, t2);
-        return success ? envToMap() : null;
+        if (!success) {
+            return null;
+        }
+
+        // Create substitution map with fully resolved types
+        Map<String, Type> substitution = new HashMap<>();
+        for (Map.Entry<TVar, Type> entry : env.getBindings().entrySet()) {
+            substitution.put(entry.getKey().getName(),
+                deepApplySubstitution(entry.getValue(), env.getBindings()));
+        }
+        return substitution;
     }
 
     private boolean unifyInternal(Type t1, Type t2) {
         t1 = applySubstitution(t1);
         t2 = applySubstitution(t2);
+
+        // Handle primitive type mismatches first
+        if (isPrimitiveMismatch(t1, t2)) {
+            return false;
+        }
 
         if (t1.equals(t2)) {
             return true;
@@ -41,108 +54,94 @@ public class Unifier {
                 unifyInternal(f1.getOutput(), f2.getOutput());
         }
 
-        if (t1 instanceof ProdType && t2 instanceof ProdType) {
-            ProdType p1 = (ProdType) t1;
-            ProdType p2 = (ProdType) t2;
-            return unifyInternal(p1.getLeft(), p2.getLeft()) &&
-                unifyInternal(p1.getRight(), p2.getRight());
-        }
+        return false;
+    }
 
-        if (t1 instanceof Constant && t2 instanceof Constant) {
-            return ((Constant) t1).getName().equals(((Constant) t2).getName());
-        }
+    private boolean isPrimitiveMismatch(Type t1, Type t2) {
+        // Check if trying to unify incompatible primitive types
+        if (t1 instanceof TVar && t2 instanceof TVar) {
+            String name1 = ((TVar)t1).getName();
+            String name2 = ((TVar)t2).getName();
 
-        return false; // Types don't match
+            if ((name1.equals("Int") && name2.equals("Bool")) ||
+                (name1.equals("Bool") && name2.equals("Int"))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean unifyVariable(TVar var, Type type) {
-        type = applySubstitution(type); // Ensure latest substitution applied
-
+        type = applySubstitution(type);
         if (var.equals(type)) {
             return true;
         }
-
-        if (occursIn(var, type)) {
-            return false; // Occurs check fails
+        if (occursCheck(var, type)) {
+            return false;
         }
-
         env.bind(var, type);
         return true;
     }
 
-    private Map<String, Type> envToMap() {
-        Map<String, Type> map = new HashMap<>();
-        for (Map.Entry<TVar, Type> entry : env.getBindings().entrySet()) {
-            map.put(entry.getKey().getName(), entry.getValue());
+    private boolean occursCheck(TVar var, Type type) {
+        type = applySubstitution(type);
+        if (type instanceof TVar) {
+            return var.equals(type);
         }
-        return map;
+        if (type instanceof FType) {
+            FType ft = (FType) type;
+            return occursCheck(var, ft.getInput()) || occursCheck(var, ft.getOutput());
+        }
+        return false;
     }
 
-    // Apply current environment substitution
     private Type applySubstitution(Type type) {
         if (type instanceof TVar) {
             TVar var = (TVar) type;
             Type replacement = env.lookup(var);
-            return replacement != null ? replacement : var;
+            return replacement != null ? applySubstitution(replacement) : var;
         }
         if (type instanceof FType) {
-            FType f = (FType) type;
+            FType ft = (FType) type;
             return new FType(
-                applySubstitution(f.getInput()),
-                applySubstitution(f.getOutput())
-            );
-        }
-        if (type instanceof ProdType) {
-            ProdType p = (ProdType) type;
-            return new ProdType(
-                applySubstitution(p.getLeft()),
-                applySubstitution(p.getRight())
-            );
-        }
-        return type; // Constants and others
-    }
-
-    // Apply given substitution map (static version, used elsewhere if needed)
-    public static Type applySubstitution(Type type, Map<String, Type> substitution) {
-        if (type instanceof TVar) {
-            TVar var = (TVar) type;
-            Type replacement = substitution.get(var.getName());
-            return replacement != null ? replacement : var;
-        }
-        if (type instanceof FType) {
-            FType f = (FType) type;
-            return new FType(
-                applySubstitution(f.getInput(), substitution),
-                applySubstitution(f.getOutput(), substitution)
-            );
-        }
-        if (type instanceof ProdType) {
-            ProdType p = (ProdType) type;
-            return new ProdType(
-                applySubstitution(p.getLeft(), substitution),
-                applySubstitution(p.getRight(), substitution)
+                applySubstitution(ft.getInput()),
+                applySubstitution(ft.getOutput())
             );
         }
         return type;
     }
 
-    private boolean occursIn(TVar var, Type type) {
-        type = applySubstitution(type);
+    private Type deepApplySubstitution(Type type, Map<TVar, Type> substitution) {
         if (type instanceof TVar) {
-            return type.equals(var);
+            Type sub = substitution.get(type);
+            return sub != null ? deepApplySubstitution(sub, substitution) : type;
         }
         if (type instanceof FType) {
-            FType f = (FType) type;
-            return occursIn(var, f.getInput()) || occursIn(var, f.getOutput());
+            FType ft = (FType) type;
+            return new FType(
+                deepApplySubstitution(ft.getInput(), substitution),
+                deepApplySubstitution(ft.getOutput(), substitution)
+            );
         }
-        if (type instanceof ProdType) {
-            ProdType p = (ProdType) type;
-            return occursIn(var, p.getLeft()) || occursIn(var, p.getRight());
-        }
-        return false;
+        return type;
     }
 
     public TypeEnv getEnv() {
         return env;
     }
+    public static Type applySubstitution(Type type, Map<String, Type> substitution) {
+        if (type instanceof TVar) {
+            Type sub = substitution.get(((TVar)type).getName());
+            return sub != null ? applySubstitution(sub, substitution) : type;
+        }
+        else if (type instanceof FType) {
+            FType ft = (FType)type;
+            return new FType(
+                applySubstitution(ft.getInput(), substitution),
+                applySubstitution(ft.getOutput(), substitution)
+            );
+        }
+        return type;
+    }
+
 }

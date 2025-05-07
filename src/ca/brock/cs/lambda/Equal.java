@@ -1,5 +1,6 @@
 package ca.brock.cs.lambda;
 
+import ca.brock.ca.interpreter.Constant;
 import ca.brock.ca.interpreter.TVar;
 import ca.brock.ca.interpreter.Type;
 import ca.brock.ca.interpreter.TypeError;
@@ -32,15 +33,18 @@ public class Equal extends Term {
         return left.toStringPrec(prec) + " = " + right.toStringPrec(prec);
     }
     @Override
-    public void type(Map<String, Type> env) {
+    protected Type computeType(Map<String, Type> env) {
         left.type(env);
         right.type(env);
 
-        Unifier unifier = new Unifier();
-        Map<String, Type> sub = unifier.unify(left.getType(), right.getType());
-        if (sub == null) throw new TypeError("Operands must have same type");
+        Type leftType = left.getType();
+        Type rightType = right.getType();
 
-        type = new TVar("Bool");
+        Map<String, Type> sub = new Unifier().unify(leftType, rightType);
+        if (sub == null) {
+            throw new RuntimeException("Comparison operands must have same type");
+        }
+
+        return new Constant("Bool");
     }
-
 }

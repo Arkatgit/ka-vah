@@ -32,36 +32,18 @@ public class Addition extends Term {
     }
 
     @Override
-    public void type(Map<String, Type> env) {
-        // First type check both operands
+    protected Type computeType(Map<String, Type> env) {
         left.type(env);
         right.type(env);
 
-        // Create a Unifier instance
-        Unifier unifier = new Unifier();
+        Type leftType = left.getType();
+        Type rightType = right.getType();
 
-        // Unify left operand with Int
-        Map<String, Type> substitution = unifier.unify(left.getType(), new TVar("Int"));
-
-        if (substitution == null) {
-            throw new TypeError("Left operand of addition must be Int");
+        if (!leftType.equals(new ca.brock.ca.interpreter.Constant("Int")) || !rightType.equals( new ca.brock.ca.interpreter.Constant("Int"))) {
+            throw new RuntimeException("Operands must be integers");
         }
 
-        // Apply the substitution to the right operand's type
-        Type rightType = Unifier.applySubstitution(right.getType(), substitution);
-
-        // Unify right operand with Int
-        Map<String, Type> sub2 = unifier.unify(rightType, new TVar("Int"));
-
-        if (sub2 == null) {
-            throw new TypeError("Right operand of addition must be Int");
-        }
-
-        // Combine substitutions
-        substitution.putAll(sub2);
-
-        // Set the result type to Int
-        type = new TVar("Int");
+        return new ca.brock.ca.interpreter.Constant("Int");
     }
 
 }

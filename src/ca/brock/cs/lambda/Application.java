@@ -94,19 +94,27 @@ public class Application extends Term {
         return result;
     }
     @Override
-    public void type(Map<String, Type> env) {
+    protected Type computeType(Map<String, Type> env) {
         function.type(env);
         argument.type(env);
 
-        Unifier unifier = new Unifier();
-        TVar resultType = TVar.fresh();  // Changed from new TVar()
-        Map<String, Type> sub = unifier.unify(
-            function.getType(),
-            new FType(argument.getType(), resultType)
+        Type funType = function.getType();
+        Type argType = argument.getType();
+        TVar resultType = TVar.fresh();
+
+        // Unify function type with expected type
+        Map<String, Type> substitution = new Unifier().unify(
+            funType,
+            new FType(argType, resultType)
         );
 
-        if (sub == null) throw new TypeError("Function application type mismatch");
-        type = Unifier.applySubstitution(resultType, sub);
+        if (substitution == null) {
+            throw new RuntimeException("Type mismatch in application: cannot apply " +
+                funType + " to " + argType);
+        }
+
+        // Apply substitution to result type
+        return Unifier.applySubstitution(resultType, substitution);
     }
 
 }

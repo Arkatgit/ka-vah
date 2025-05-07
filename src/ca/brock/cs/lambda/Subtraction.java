@@ -32,20 +32,20 @@ public class Subtraction extends Term {
         return left.toStringPrec(prec) + " - " + right.toStringPrec(prec);
     }
 
+
     @Override
-    public void type(Map<String, Type> env) {
+    protected Type computeType(Map<String, Type> env) {
         left.type(env);
         right.type(env);
 
-        Unifier unifier = new Unifier();
-        Map<String, Type> sub1 = unifier.unify(left.getType(), new TVar("Int"));
-        if (sub1 == null) throw new TypeError("Left operand must be Int");
+        Type leftType = left.getType();
+        Type rightType = right.getType();
 
-        Type rightType = Unifier.applySubstitution(right.getType(), sub1);
-        Map<String, Type> sub2 = unifier.unify(rightType, new TVar("Int"));
-        if (sub2 == null) throw new TypeError("Right operand must be Int");
+        if (!leftType.equals(new ca.brock.ca.interpreter.Constant("Int")) || !rightType.equals( new ca.brock.ca.interpreter.Constant("Int"))) {
+            throw new RuntimeException("Operands must be integers");
+        }
 
-        type = new TVar("Int");
+        return new ca.brock.ca.interpreter.Constant("Int");
     }
 
 }

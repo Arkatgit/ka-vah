@@ -28,6 +28,7 @@ public class Constant extends Term {
         }
         return value;
     }
+
     public boolean isInfixOperator() {
         return operator != null;
     }
@@ -41,38 +42,28 @@ public class Constant extends Term {
     }
 
     @Override
-    public void type(Map<String, Type> env) {
-        if (operator != null) {
-            switch (operator.getSymbol()) {
-                case "+": case "-": case "*":
-                    type = new FType(new TVar("Int"),
-                        new FType(new TVar("Int"), new TVar("Int")));
-                    break;
-                case "and": case "or":
-                    type = new FType(new TVar("Bool"),
-                        new FType(new TVar("Bool"), new TVar("Bool")));
-                    break;
-                case "not":
-                    type = new FType(new TVar("Bool"), new TVar("Bool"));
-                    break;
-                case "=": case "<=":
-                    TVar a = TVar.fresh();  // Changed from new TVar()
-                    type = new FType(a, new FType(a, new TVar("Bool")));
-                    break;
-                case "flip":
-                    TVar b = TVar.fresh();  // Changed from new TVar()
-                    TVar c = TVar.fresh();  // Changed from new TVar()
-                    TVar d = TVar.fresh();  // Changed from new TVar()
-                    type = new FType(b, new FType(c, new FType(d,
-                        new FType(new FType(c, new FType(b, d)), d))));
-                    break;
-                default:
-                    throw new TypeError("Unknown operator: " + operator.getSymbol());
-            }
-        } else if (value.equals("True") || value.equals("False")) {
-            type = new TVar("Bool");
-        } else {
-            type = TVar.fresh();  // Changed from new TVar()
+    protected Type computeType(Map<String, Type> env) {
+        if (value.equals("True") || value.equals("False")) {
+            return new ca.brock.ca.interpreter.Constant("Bool");
+        }
+
+        switch (value) {
+            case "+":
+            case "-":
+            case "*":
+                return new FType(new ca.brock.ca.interpreter.Constant("Int"), new FType(new ca.brock.ca.interpreter.Constant("Int"), new ca.brock.ca.interpreter.Constant("Int")));
+            case "and":
+            case "or":
+                return new FType(new ca.brock.ca.interpreter.Constant("Bool"), new FType(new ca.brock.ca.interpreter.Constant("Bool"), new ca.brock.ca.interpreter.Constant("Bool")));
+            case "=":
+            case "<=":
+                TVar a = TVar.fresh();
+                return new FType(a, new FType(a, new ca.brock.ca.interpreter.Constant("Bool")));
+            case "not":
+                return new FType(new ca.brock.ca.interpreter.Constant("Bool"), new ca.brock.ca.interpreter.Constant("Bool"));
+            default:
+                return TVar.fresh();
         }
     }
+
 }

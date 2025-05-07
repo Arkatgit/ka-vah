@@ -1,5 +1,6 @@
 package ca.brock.cs.lambda;
 
+import ca.brock.ca.interpreter.Constant;
 import ca.brock.ca.interpreter.TVar;
 import ca.brock.ca.interpreter.Type;
 import ca.brock.ca.interpreter.TypeError;
@@ -34,18 +35,18 @@ public class LEqual extends Term{
     }
 
     @Override
-    public void type(Map<String, Type> env) {
+    protected Type computeType(Map<String, Type> env) {
         left.type(env);
         right.type(env);
 
-        Unifier unifier = new Unifier();
-        Map<String, Type> sub1 = unifier.unify(left.getType(), new TVar("Int"));
-        if (sub1 == null) throw new TypeError("Left operand must be Int");
+        Type leftType = left.getType();
+        Type rightType = right.getType();
 
-        Type rightType = Unifier.applySubstitution(right.getType(), sub1);
-        Map<String, Type> sub2 = unifier.unify(rightType, new TVar("Int"));
-        if (sub2 == null) throw new TypeError("Right operand must be Int");
+        Map<String, Type> sub = new Unifier().unify(leftType, rightType);
+        if (sub == null) {
+            throw new RuntimeException("Comparison operands must have same type");
+        }
 
-        type = new TVar("Bool");
+        return new Constant("Bool");
     }
 }

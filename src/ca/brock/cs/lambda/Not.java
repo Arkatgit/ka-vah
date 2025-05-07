@@ -25,14 +25,17 @@ public class Not extends Term {
     }
 
     @Override
-    public void type(Map<String, Type> env) {
+    protected Type computeType(Map<String, Type> env) {
+        // Type check the operand
         operand.type(env);
+        Type operandType = operand.getType();
 
-        Unifier unifier = new Unifier();
-        Map<String, Type> sub = unifier.unify(operand.getType(), new TVar("Bool"));
-        if (sub == null) throw new TypeError("Operand must be Bool");
+        // Operand must be boolean
+        if (!operandType.equals(new ca.brock.ca.interpreter.Constant("Bool"))) {
+            throw new RuntimeException("NOT operand must be boolean (found " + operandType + ")");
+        }
 
-        type = new TVar("Bool");
+        return new ca.brock.ca.interpreter.Constant("Bool");
     }
 
 }

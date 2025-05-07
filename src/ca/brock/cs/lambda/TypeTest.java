@@ -20,7 +20,8 @@ public class TypeTest {
             "λf.λg.λx.f (g x)",             // (b -> c) -> (a -> b) -> a -> c
             "if True then 5 else 10",       // Int
             "not False",                    // Bool
-            "5 + 3",                        // Int
+            "5 + True",                        // Int
+            "5 - 6",                            //  Int
             "True and False",               // Bool
             "(λx.x) 5",                     // Int
             "(λf.λx.f x) (λy.y)",           // a -> a
