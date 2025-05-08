@@ -34,15 +34,24 @@ public class Subtraction extends Term {
 
 
     @Override
-    protected Type computeType(Map<String, Type> env) {
-        left.type(env);
-        right.type(env);
+    protected Type computeType(Map<String, Type> env, Unifier unifier) {
+        left.type(env, unifier);
+        right.type(env, unifier);
 
         Type leftType = left.getType();
         Type rightType = right.getType();
 
-        if (!leftType.equals(new ca.brock.ca.interpreter.Constant("Int")) || !rightType.equals( new ca.brock.ca.interpreter.Constant("Int"))) {
-            throw new RuntimeException("Operands must be integers");
+        Map<TVar, Type> substitution = unifier.unify(leftType , new ca.brock.ca.interpreter.Constant("Int"));
+        if (substitution == null)
+        {
+            throw new TypeError("Left operand of subtraction must be an integer, but got: " + leftType);
+        }
+
+        substitution = unifier.unify( rightType , new ca.brock.ca.interpreter.Constant("Int"));
+
+        if (substitution == null)
+        {
+            throw new TypeError("Right operand of subtraction must be an integer, but got: " + leftType);
         }
 
         return new ca.brock.ca.interpreter.Constant("Int");

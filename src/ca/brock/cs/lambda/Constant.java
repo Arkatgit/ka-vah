@@ -4,6 +4,7 @@ import ca.brock.ca.interpreter.FType;
 import ca.brock.ca.interpreter.TVar;
 import ca.brock.ca.interpreter.Type;
 import ca.brock.ca.interpreter.TypeError;
+import ca.brock.ca.interpreter.Unifier;
 
 import java.util.Map;
 
@@ -42,7 +43,7 @@ public class Constant extends Term {
     }
 
     @Override
-    protected Type computeType(Map<String, Type> env) {
+    protected Type computeType(Map<String, Type> env, Unifier unifier) {
         if (value.equals("True") || value.equals("False")) {
             return new ca.brock.ca.interpreter.Constant("Bool");
         }

@@ -34,9 +34,9 @@ public class Multiplication extends Term {
     }
 
     @Override
-    protected Type computeType(Map<String, Type> env) {
-        left.type(env);
-        right.type(env);
+    protected Type computeType(Map<String, Type> env, Unifier unifier) {
+        left.type(env, unifier);
+        right.type(env, unifier);
 
         Type leftType = left.getType();
         Type rightType = right.getType();

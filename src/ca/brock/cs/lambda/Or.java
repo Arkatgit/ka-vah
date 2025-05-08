@@ -30,16 +30,16 @@ public class Or extends Term {
     }
 
     @Override
-    protected Type computeType(Map<String, Type> env) {
+    protected Type computeType(Map<String, Type> env, Unifier unifier) {
         // Type check both operands
-        left.type(env);
-        right.type(env);
+        left.type(env, unifier);
+        right.type(env, unifier);
 
         Type leftType = left.getType();
         Type rightType = right.getType();
 
         // Both operands must be boolean
-        if (!leftType.equals(new Constant("Bool")) || !rightType.equals(new Constant("Bool"))) {
+        if (!leftType.equals(new ca.brock.ca.interpreter.Constant("Bool")) || !rightType.equals(new ca.brock.ca.interpreter.Constant("Bool"))) {
             throw new RuntimeException("OR operands must be boolean (found " + leftType + " and " + rightType + ")");
         }
 

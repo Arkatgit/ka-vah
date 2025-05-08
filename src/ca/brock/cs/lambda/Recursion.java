@@ -25,15 +25,15 @@ public class Recursion extends Term {
         return name + ". " + body.toStringPrec(prec);
     }
     @Override
-    protected Type computeType(Map<String, Type> env) {
+    protected Type computeType(Map<String, Type> env, Unifier unifier) {
         Map<String, Type> newEnv = new HashMap<>(env);
         TVar recType = TVar.fresh();
         newEnv.put(name, recType);
 
-        body.type(newEnv);
+        body.type(newEnv, unifier); // Pass down the Unifier
         Type bodyType = body.getType();
 
-        Map<String, Type> sub = new Unifier().unify(recType, bodyType);
+        Map<TVar, Type> sub = unifier.unify(recType, bodyType); // Use the provided Unifier
         if (sub == null) {
             throw new RuntimeException("Recursive definition type mismatch");
         }

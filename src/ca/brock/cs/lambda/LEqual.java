@@ -35,18 +35,18 @@ public class LEqual extends Term{
     }
 
     @Override
-    protected Type computeType(Map<String, Type> env) {
-        left.type(env);
-        right.type(env);
+    protected Type computeType(Map<String, Type> env, Unifier unifier) {
+        left.type(env, unifier);
+        right.type(env, unifier);
 
         Type leftType = left.getType();
         Type rightType = right.getType();
 
-        Map<String, Type> sub = new Unifier().unify(leftType, rightType);
+        Map<TVar, Type> sub = unifier.unify(leftType, rightType);
         if (sub == null) {
             throw new RuntimeException("Comparison operands must have same type");
         }
 
-        return new Constant("Bool");
+        return new ca.brock.ca.interpreter.Constant("Bool");
     }
 }

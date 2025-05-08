@@ -93,28 +93,50 @@ public class Application extends Term {
 
         return result;
     }
+
     @Override
-    protected Type computeType(Map<String, Type> env) {
-        function.type(env);
-        argument.type(env);
+    protected Type computeType(Map<String, Type> env, Unifier unifier) {
+        AppLogger.info("--- Application: " + function + " " + argument);
+        AppLogger.info("Environment: " + env);
 
+        AppLogger.info("Typing function: " + function + " with environment: " + env);
+        function.type(env, unifier);
         Type funType = function.getType();
-        Type argType = argument.getType();
-        TVar resultType = TVar.fresh();
+        AppLogger.info("Type of function Term node: " + function.type); // Check the Term node's type
 
-        // Unify function type with expected type
-        Map<String, Type> substitution = new Unifier().unify(
+        AppLogger.info("Typing argument: " + argument + " with environment: " + env);
+        argument.type(env, unifier);
+        Type argType = argument.getType();
+        AppLogger.info("Type of argument Term node: " + argument.type); // Check the Term node's type
+
+        TVar resultType = TVar.fresh();
+        AppLogger.info("Fresh result type for application: " + resultType);
+        AppLogger.info("Type of function (before unify): " + funType);
+        AppLogger.info("Type of argument (before unify): " + argType);
+        AppLogger.info("Expected function type: (" + argType + " → " + resultType + ")");
+
+        Map<TVar, Type> substitution = unifier.unify(
             funType,
             new FType(argType, resultType)
         );
+
+        AppLogger.info("Unifier environment after unification: " + unifier.getEnv());
+        AppLogger.info("Substitution result: " + substitution);
 
         if (substitution == null) {
             throw new RuntimeException("Type mismatch in application: cannot apply " +
                 funType + " to " + argType);
         }
 
-        // Apply substitution to result type
-        return Unifier.applySubstitution(resultType, substitution);
-    }
+        // Apply the substitution to the types of function and argument immediately
+        function.setType(unifier.applySubstitution(function.getType(), substitution)); // Use unifier instance
+        argument.setType(unifier.applySubstitution(argument.getType(), substitution)); // Use unifier instance
+        AppLogger.info("Type of function Term node (after unify): " + function.type);
+        AppLogger.info("Type of argument Term node (after unify): " + argument.type);
 
+        Type finalResultType = unifier.applySubstitution(resultType, substitution); // Use unifier instance
+        AppLogger.info("Result type after substitution: " + finalResultType);
+
+        return finalResultType;
+    }
 }

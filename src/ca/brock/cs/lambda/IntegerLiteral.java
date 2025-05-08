@@ -3,6 +3,7 @@ package ca.brock.cs.lambda;
 import ca.brock.ca.interpreter.Constant;
 import ca.brock.ca.interpreter.TVar;
 import ca.brock.ca.interpreter.Type;
+import ca.brock.ca.interpreter.Unifier;
 
 import java.util.Map;
 
@@ -19,7 +20,7 @@ public class IntegerLiteral extends Term {
         return Integer.toString(value);
     }
     @Override
-    protected Type computeType(Map<String, Type> env) {
+    protected Type computeType(Map<String, Type> env, Unifier unifier) {
         return new Constant("Int");
     }
 }

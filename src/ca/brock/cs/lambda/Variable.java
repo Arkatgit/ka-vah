@@ -3,6 +3,7 @@ package ca.brock.cs.lambda;
 import ca.brock.ca.interpreter.TVar;
 import ca.brock.ca.interpreter.Type;
 import ca.brock.ca.interpreter.TypeError;
+import ca.brock.ca.interpreter.Unifier;
 
 import java.util.Map;
 
@@ -23,7 +24,7 @@ public class Variable extends Term {
     }
 
     @Override
-    protected Type computeType(Map<String, Type> env) {
+    protected Type computeType(Map<String, Type> env, Unifier unifier) {
         if (!env.containsKey(name)) {
             // For free variables, create a fresh type variable
             TVar fresh = TVar.fresh();

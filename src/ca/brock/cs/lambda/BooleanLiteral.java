@@ -3,6 +3,7 @@ package ca.brock.cs.lambda;
 import ca.brock.ca.interpreter.Constant;
 import ca.brock.ca.interpreter.TVar;
 import ca.brock.ca.interpreter.Type;
+import ca.brock.ca.interpreter.Unifier;
 
 import java.util.Map;
 
@@ -21,7 +22,7 @@ public class BooleanLiteral extends Term {
         }
 
     @Override
-    protected Type computeType(Map<String, Type> env) {
-        return new Constant("Bool");
+    protected Type computeType(Map<String, Type> env, Unifier unifier) {
+        return new ca.brock.ca.interpreter.Constant("Bool");
     }
 }
