@@ -1,7 +1,7 @@
-import ca.brock.cs.lambda.Abstraction;
-import ca.brock.cs.lambda.Application;
-import ca.brock.cs.lambda.Term;
-import ca.brock.cs.lambda.Variable;
+import ca.brock.cs.lambda.parser.Abstraction;
+import ca.brock.cs.lambda.parser.Application;
+import ca.brock.cs.lambda.parser.Term;
+import ca.brock.cs.lambda.parser.Variable;
 
 public class LambdaCalculus {
     public static void main(String[] args) {

@@ -1,8 +1,9 @@
 package ca.brock.cs.lambda;
 
-import ca.brock.ca.interpreter.FType;
-import ca.brock.ca.interpreter.Type;
-import ca.brock.ca.interpreter.Unifier;
+import ca.brock.cs.lambda.parser.ProgParser;
+import ca.brock.cs.lambda.parser.Term;
+import ca.brock.cs.lambda.types.Type;
+import ca.brock.cs.lambda.types.Unifier;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -33,6 +34,10 @@ public class TypeTest {
             "λf.λg.λx.(f x) (g x)",         // (a -> b) -> (a -> (b -> c)) -> a -> c
             "λx.(not x)",                   // Bool -> Bool
             "λx.λy.(x = y)",                // a -> a -> Bool
+            "λx.λy.(x and y)",                // Bool -> Bool -> Bool
+            "λx.λy.(x or 45)",                // ERROR: Right operand must be a boolean, but got: Constant(Int)
+            "λa.(a * 2)",                   // Int -> Int
+            "λa.(False + 2)",                   //  ERROR: Left operand must be an integer, but got: Constant(Bool)
             "λx.λy.(x <= y)",               // Int -> Int -> Bool
             "rec fact. λn.(if (n = 0) then 1 else ( (*)  n (fact ( n -  1))))", // Int -> Int
         };
