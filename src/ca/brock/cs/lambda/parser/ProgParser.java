@@ -1,4 +1,4 @@
-package ca.brock.cs.lambda;
+package ca.brock.cs.lambda.parser;
 
 import org.jparsec.OperatorTable;
 import org.jparsec.Parser;
