@@ -28,7 +28,7 @@ public class TypeTest {
             "(λx.x) 5",                     // Int
             "(λf.λx.f x) (λy.y)",           // a -> a
             "λx.λy.x",                     //  a → b → a
-            "λx.λy.(+ x y)",                // Int -> Int -> Int
+            "λx.λy.((+) x y)",                // Int -> Int -> Int
             "λx.(if x then True else False)", // Bool -> Bool
             "λf.(f True)",                   // (Bool -> a) -> a
             "λf.λg.λx.(f x) (g x)",         // (a -> b) -> (a -> (b -> c)) -> a -> c
@@ -40,6 +40,20 @@ public class TypeTest {
             "λa.(False + 2)",                   //  ERROR: Left operand must be an integer, but got: Constant(Bool)
             "λx.λy.(x <= y)",               // Int -> Int -> Bool
             "rec fact. λn.(if (n = 0) then 1 else ( (*)  n (fact ( n -  1))))", // Int -> Int
+            "λ x . λ x . ( x + 3) + x",   // a -> ( Int -> Int)
+            "λf.λx.f (g x)",                // (a -> b) -> (c -> a) -> c -> b
+            "(λx.x) True",                  // Bool
+            "not (5 = 6)",                  // Bool
+            "if (True and False) then 5 else (6 - 1)", // Int
+            "λx.λy.λz.((x y) z)",           // (a -> b -> c) -> a -> b -> c
+            "λx.(x + (3 * 4))",             // Int -> Int
+            "λf.(f (f True))",              // (Bool -> Bool) -> Bool
+            "λf.(f (f 5))",                 // (Int -> Int) -> Int
+            "λx.λy.(x = True)",             // a -> Bool -> Bool
+            "λx.λy.(x = y and True)",       // Bool -> Bool -> Bool
+            "λx.(if (not x) then 5 else 6)", // Bool -> Int
+            "λx.λy.(x + y * 2)",           // Int -> Int -> Int
+            "λx.λy.((λz.z) x)",             // a -> b -> a
         };
 
         for (String test : tests) {

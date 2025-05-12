@@ -1,7 +1,9 @@
 package ca.brock.cs.lambda.parser;
 
 import ca.brock.cs.lambda.types.Constant;
+import ca.brock.cs.lambda.types.TVar;
 import ca.brock.cs.lambda.types.Type;
+import ca.brock.cs.lambda.types.TypeError;
 import ca.brock.cs.lambda.types.Unifier;
 
 import java.util.Map;
@@ -44,13 +46,21 @@ public class Conditional extends Term {
         Type thenType = trueBranch.getType();
         Type elseType = falseBranch.getType();
 
-        if (!condType.equals(new Constant("Bool"))) {
-            throw new RuntimeException("Condition must be boolean");
+        Map<TVar, Type> substitution = unifier.unify( condType , new Constant("Bool"));
+        if (substitution == null)
+        {
+            throw new TypeError("Condition must be boolean, but got " + condType);
         }
 
-        if (!thenType.equals(elseType)) {
-            throw new RuntimeException("Branches must have same type");
+        substitution = unifier.unify( thenType , elseType);
+        if (substitution == null)
+        {
+            throw new TypeError("Branches must have same type");
         }
+
+//        if (!thenType.equals(elseType)) {
+//            throw new RuntimeException("Branches must have same type");
+//        }
 
         return thenType;
     }
