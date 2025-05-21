@@ -50,7 +50,7 @@ public class Addition extends Term {
 
         if (substitution == null)
         {
-            throw new TypeError("Right operand of addition must be an integer, but got: " + leftType);
+            throw new TypeError("Right operand of addition must be an integer, but got: " + rightType);
         }
 
         return new Constant("Int");

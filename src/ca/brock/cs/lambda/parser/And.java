@@ -49,7 +49,7 @@ public class And extends Term {
 
         if (substitution == null)
         {
-            throw new TypeError("Right operand of AND must be an boolean, but got: " + leftType);
+            throw new TypeError("Right operand of AND must be an boolean, but got: " + rightType);
         }
 
         return new Constant("Bool");

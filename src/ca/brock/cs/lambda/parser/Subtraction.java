@@ -52,7 +52,7 @@ public class Subtraction extends Term {
 
         if (substitution == null)
         {
-            throw new TypeError("Right operand of subtraction must be an integer, but got: " + leftType);
+            throw new TypeError("Right operand of subtraction must be an integer, but got: " + rightType);
         }
 
         return new Constant("Int");
