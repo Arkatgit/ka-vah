@@ -1,9 +1,12 @@
 package ca.brock.cs.lambda.parser;
 
+import ca.brock.cs.lambda.combinators.Combinator;
+import ca.brock.cs.lambda.intermediate.IntermediateTerm;
 import ca.brock.cs.lambda.types.Type;
 import ca.brock.cs.lambda.types.Unifier;
 
 import java.util.Map;
+import java.util.Set;
 
 public abstract class Term {
     protected Type type; // Stores the computed type
@@ -39,6 +42,22 @@ public abstract class Term {
     // Internal type computation (implemented by subclasses)
     protected abstract Type computeType(Map<String, Type> env, Unifier unifier);
 
-    // Existing computeType method - remove this
-    // protected abstract Type computeType(Map<String, Type> env);
+    public abstract Term eval(Map<String, Term> env);
+    public abstract Term substitute(String varName, Term value);
+
+    public abstract Set<String> getFreeVariables();
+
+    /**
+     * Translates this lambda calculus term into a combinator calculus term.
+     * @return The equivalent Combinator term.
+     */
+    public abstract Combinator translate();
+
+    /**
+     * Converts this lambda calculus term into an IntermediateTerm.
+     * This is the first step in the two-phase translation to combinators.
+     * @return The equivalent IntermediateTerm.
+     */
+    public abstract IntermediateTerm toIntermediateTerm();
+
 }

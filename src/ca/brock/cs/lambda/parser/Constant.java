@@ -1,11 +1,17 @@
 package ca.brock.cs.lambda.parser;
 
+import ca.brock.cs.lambda.combinators.Combinator;
+import ca.brock.cs.lambda.combinators.CombinatorConstant;
+import ca.brock.cs.lambda.intermediate.IntermediateConstant;
+import ca.brock.cs.lambda.intermediate.IntermediateTerm;
 import ca.brock.cs.lambda.types.FType;
 import ca.brock.cs.lambda.types.TVar;
 import ca.brock.cs.lambda.types.Type;
 import ca.brock.cs.lambda.types.Unifier;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class Constant extends Term {
     private String value;
@@ -64,6 +70,39 @@ public class Constant extends Term {
             default:
                 return TVar.fresh();
         }
+    }
+    @Override
+    public Term eval(Map<String, Term> env) {
+        return this; // Constants evaluate to themselves
+    }
+
+    @Override
+    public Term substitute(String varName, Term value) {
+        return this; // Constants don't contain variables to substitute
+    }
+    @Override
+    public Set<String> getFreeVariables() {
+        return new HashSet<>(); // Constants have no free variables
+    }
+
+    @Override
+    public Combinator translate() {
+        // Translate a constant to a CombinatorConstant
+        // Special case for operators that are constants (e.g., "+", "and")
+        // They will be wrapped as CombinatorConstant containing their string representation.
+        if (operator != null) {
+            return new CombinatorConstant(operator.getSymbol());
+        }
+        return new CombinatorConstant(value);
+    }
+
+    /**
+     * Converts this Constant to an IntermediateConstant.
+     * @return The equivalent IntermediateConstant.
+     */
+    @Override
+    public IntermediateTerm toIntermediateTerm() {
+        return new IntermediateConstant(value);
     }
 
 }
