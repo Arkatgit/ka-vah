@@ -54,7 +54,13 @@ public class Abstraction extends Term {
         body.type(newEnv, unifier); // Type check the body with the new environment
         Type bodyType = body.getType();
 
-        return new FType(paramType, bodyType); // Type of abstraction is (parameter's type -> body's type)
+        //return new FType(paramType, bodyType); // Type of abstraction is (parameter's type -> body's type)
+
+        FType abstractionType =  new FType(paramType, bodyType);
+        // apply final substitutions
+        Type resolvedType = unifier.applySubstitution(abstractionType, unifier.getEnv());
+
+        return resolvedType;
     }
 
     @Override

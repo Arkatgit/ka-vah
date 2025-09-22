@@ -29,5 +29,6 @@ public class AppLogger {
         }
     }
 
+
     // Add other logging levels as needed (warning, severe, etc.)
 }

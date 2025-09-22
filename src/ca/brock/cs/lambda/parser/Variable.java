@@ -4,11 +4,15 @@ import ca.brock.cs.lambda.combinators.Combinator;
 import ca.brock.cs.lambda.combinators.CombinatorVariable;
 import ca.brock.cs.lambda.intermediate.IntermediateTerm;
 import ca.brock.cs.lambda.intermediate.IntermediateVariable;
+import ca.brock.cs.lambda.types.AlgebraicDataType;
+import ca.brock.cs.lambda.types.FType;
 import ca.brock.cs.lambda.types.TVar;
 import ca.brock.cs.lambda.types.Type;
 import ca.brock.cs.lambda.types.Unifier;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -32,11 +36,12 @@ public class Variable extends Term {
     protected Type computeType(Map<String, Type> env, Unifier unifier) {
         if (!env.containsKey(name)) {
             // For free variables, create a fresh type variable
-            TVar fresh = TVar.fresh();
+           TVar fresh = TVar.fresh();
+            //TVar fresh = unifier.fresh();
             env.put(name, fresh);
             return fresh;
         }
-        return env.get(name);
+       return env.get(name);
     }
 
     @Override
