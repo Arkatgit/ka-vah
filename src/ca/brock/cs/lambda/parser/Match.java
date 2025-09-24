@@ -71,167 +71,6 @@ public class Match extends Term {
         }
     }
 
-//    protected Type computeType(Map<String, Type> env, Unifier unifier) {
-//        Type inputType = inputTerm.computeType(env, unifier);
-//        List<Type> caseResultTypes = new ArrayList<>();
-//
-//        // Save original state for backtracking
-//        Map<TVar, Type> originalUnifierEnv = new HashMap<>(unifier.getEnv());
-//        Map<String, Type> originalTypeEnv = new HashMap<>(env);
-//        System.out.println("MATCH DEBUG: Input type: " + inputType);
-//
-//        for (int i = 0; i < cases.size(); i++) {
-//            Case caseItem = cases.get(i);
-//            System.out.println("  Pattern " + i + ": " + caseItem.getPattern());
-//
-//            try {
-//                // RESTORE ORIGINAL STATE for each pattern attempt
-//                unifier.setEnv(new HashMap<>(originalUnifierEnv));
-//                Map<String, Type> caseEnv = new HashMap<>(originalTypeEnv);
-//
-//                // Compute pattern type with fresh environment
-//                Type patternType = caseItem.getPattern().computeType(caseEnv, unifier);
-//                System.out.println("    Pattern type: " + patternType);
-//
-//                // Try to unify pattern with input
-//                Map<TVar, Type> patternSub = unifier.unify(patternType, inputType);
-//                System.out.println("    Unification: " + (patternSub != null ? "SUCCESS" : "FAIL"));
-//                if (patternSub == null) {
-//                    continue; // Pattern doesn't match, try next one
-//                }
-//
-//                // Apply successful substitution
-//                unifier.getEnv().putAll(patternSub);
-//                applySubstitutionToEnv(caseEnv, patternSub, unifier);
-//
-//                // Compute result type in the updated environment
-//                Type caseResultType = caseItem.getResult().computeType(caseEnv, unifier);
-//                caseResultTypes.add(caseResultType);
-//
-//            } catch (TypeError e) {
-//                // Pattern failed, continue to next
-//                continue;
-//            }
-//        }
-//
-//        // RESTORE ORIGINAL STATE after processing all patterns
-//        unifier.setEnv(originalUnifierEnv);
-//
-//        if (caseResultTypes.isEmpty()) {
-//            throw new TypeError("No pattern matches input type: " + inputType);
-//        }
-//
-//        // Unify all successful case result types
-//        Type resultType = caseResultTypes.get(0);
-//        for (int i = 1; i < caseResultTypes.size(); i++) {
-//            Map<TVar, Type> resultSub = unifier.unify(resultType, caseResultTypes.get(i));
-//            if (resultSub == null) {
-//                throw new TypeError("Match cases have incompatible result types");
-//            }
-//            resultType = unifier.applySubstitution(resultType, resultSub);
-//        }
-//
-//        return resultType;
-//    }
-
-
-//    protected Type computeType(Map<String, Type> env, Unifier unifier) {
-//        if (cases.isEmpty()) {
-//            throw new TypeError("Match expression must have at least one case.");
-//        }
-//
-//        // Get the type of the term being matched against
-//        Type inputType = inputTerm.computeType(env, unifier);
-//        Type resultType = null;
-//
-//        for (Case caseItem : cases) {
-//            // Create a temporary environment for this case's pattern-bound variables
-//            Map<String, Type> caseEnv = new HashMap<>(env);
-//
-//            // Get the type of the pattern, which will populate caseEnv with new bindings
-//            Type patternType = caseItem.getPattern().computeType(caseEnv, unifier);
-//
-//            // CRITICAL: Unify the pattern's type with the input term's type
-//            // This ensures the pattern matches the input structure
-//            Map<TVar, Type> patternSub = unifier.unify(patternType, inputType);
-//            if (patternSub == null) {
-//                throw new TypeError("Pattern type " + patternType +
-//                    " does not match input type " + inputType);
-//            }
-//
-//            // Apply the unification result to update the environment
-//            inputType = unifier.applySubstitution(inputType, patternSub);
-//
-//            // Get the type of the result term within the updated environment
-//            Type caseResultType = caseItem.getResult().computeType(caseEnv, unifier);
-//
-//            if (resultType == null) {
-//                resultType = caseResultType;
-//            } else {
-//                // Unify the result type with the previous one
-//                Map<TVar, Type> resultSub = unifier.unify(resultType, caseResultType);
-//                if (resultSub == null) {
-//                    throw new TypeError("Match cases have non-unifiable result types: " +
-//                        resultType + " vs " + caseResultType);
-//                }
-//                resultType = unifier.applySubstitution(resultType, resultSub);
-//            }
-//        }
-//        return resultType;
-//    }
-
-//
-//
-//    protected Type computeType(Map<String, Type> env, Unifier unifier) {
-//        if (cases.isEmpty()) {
-//            throw new TypeError("Match expression must have at least one case.");
-//        }
-//
-//        // Get the type of the term being matched against
-//        Type inputType = inputTerm.computeType(env, unifier);
-//        List<Type> caseResultTypes = new ArrayList<>();
-//
-//        // Process each case INDEPENDENTLY with its own environment copy
-//        for (Case caseItem : cases) {
-//            // Create a FRESH environment and unifier for each case
-//            Map<String, Type> caseEnv = new HashMap<>(env);
-//            Unifier caseUnifier = new Unifier(); // Fresh unifier for this case
-//
-//            // Compute pattern type with fresh environment
-//            Type patternType = caseItem.getPattern().computeType(caseEnv, caseUnifier);
-//
-//            // Unify pattern type with input type
-//            Map<TVar, Type> patternSub = caseUnifier.unify(patternType, inputType);
-//            if (patternSub == null) {
-//                continue; // This pattern doesn't match, try next one
-//            }
-//
-//            // Apply substitution to pattern environment
-//            applySubstitutionToEnv(caseEnv, patternSub, caseUnifier);
-//
-//            // Compute result type in the updated environment
-//            Type caseResultType = caseItem.getResult().computeType(caseEnv, caseUnifier);
-//            caseResultTypes.add(caseResultType);
-//        }
-//
-//        if (caseResultTypes.isEmpty()) {
-//            throw new TypeError("No matching pattern found for input type: " + inputType);
-//        }
-//
-//        // Unify all case result types
-//        Type resultType = caseResultTypes.get(0);
-//        for (int i = 1; i < caseResultTypes.size(); i++) {
-//            Map<TVar, Type> resultSub = unifier.unify(resultType, caseResultTypes.get(i));
-//            if (resultSub == null) {
-//                throw new TypeError("Match cases have incompatible result types: " +
-//                    resultType + " vs " + caseResultTypes.get(i));
-//            }
-//            resultType = unifier.applySubstitution(resultType, resultSub);
-//        }
-//
-//        return resultType;
-//    }
-
     private void applySubstitutionToEnv(Map<String, Type> env, Map<TVar, Type> substitution, Unifier unifier) {
         for (Map.Entry<String, Type> entry : env.entrySet()) {
             Type substituted = unifier.applySubstitution(entry.getValue(), substitution);
@@ -247,34 +86,34 @@ public class Match extends Term {
 
         // 1. Compute the type of the input term being matched
         Type inputType = inputTerm.computeType(env, unifier);
-        System.out.println("DEBUG: Match input type: " + inputType);
+        AppLogger.info("DEBUG: Match input type: " + inputType);
 
         // 2. For each case, compute the pattern type and result type
         List<Type> resultTypes = new ArrayList<>();
 
         for (int i = 0; i < cases.size(); i++) {
             Case caseItem = cases.get(i);
-            System.out.println("DEBUG: Trying pattern " + i + ": " + caseItem.getPattern());
+            AppLogger.info("DEBUG: Trying pattern " + i + ": " + caseItem.getPattern());
 
             // Create a fresh environment for this case to avoid variable pollution
             Map<String, Type> caseEnv = new HashMap<>(env);
 
             // 3. Compute the pattern type - this will add pattern-bound variables to caseEnv
             Type patternType = caseItem.getPattern().computeType(caseEnv, unifier);
-            System.out.println("DEBUG: Pattern type: " + patternType);
-            System.out.println("DEBUG: About to unify pattern with input");
+            AppLogger.info("DEBUG: Pattern type: " + patternType);
+            AppLogger.info("DEBUG: About to unify pattern with input");
 
             // 4. Unify the pattern type with the input type
             Map<TVar, Type> patternSub = unifier.unify(patternType, inputType);
-            System.out.println("DEBUG: Unification result: " + patternSub);
+            AppLogger.info("DEBUG: Unification result: " + patternSub);
 
             if (patternSub == null) {
-                System.out.println("DEBUG: Pattern " + i + " failed unification");
+                AppLogger.info("DEBUG: Pattern " + i + " failed unification");
                throw new TypeError("Type mismatch between the pattern : " + caseItem.getPattern() + " and input : "
                    + inputTerm + " for the match expression");
               //  continue; // Try next pattern if this one doesn't match
             }
-            System.out.println("DEBUG: Pattern " + i + " succeeded unification");
+            AppLogger.info("DEBUG: Pattern " + i + " succeeded unification");
 
             // 5. Apply the unifier substitutions to the environment
             for (Map.Entry<String, Type> entry : caseEnv.entrySet()) {
@@ -284,7 +123,7 @@ public class Match extends Term {
 
             // 6. Compute the result type in the updated environment (with pattern-bound variables)
             Type caseResultType = caseItem.getResult().computeType(caseEnv, unifier);
-            System.out.println("DEBUG: Result type for pattern " + i + ": " + caseResultType);
+            AppLogger.info("DEBUG: Result type for pattern " + i + ": " + caseResultType);
             resultTypes.add(caseResultType);
         }
 
@@ -294,24 +133,24 @@ public class Match extends Term {
 
         // 7. All result types must be the same
         Type finalResultType = resultTypes.get(0);
-        System.out.println("DEBUG: Initial result type: " + finalResultType);
+        AppLogger.info("DEBUG: Initial result type: " + finalResultType);
 
         for (int i = 1; i < resultTypes.size(); i++) {
-            System.out.println("DEBUG: Unifying result type " + finalResultType + " with " + resultTypes.get(i));
+            AppLogger.info("DEBUG: Unifying result type " + finalResultType + " with " + resultTypes.get(i));
             Map<TVar, Type> resultSub = unifier.unify(finalResultType, resultTypes.get(i));
-            System.out.println("DEBUG: Result unification result: " + resultSub);
+            AppLogger.info("DEBUG: Result unification result: " + resultSub);
 
             if (resultSub == null) {
                 throw new TypeError("Result types are incompatible: " +
                     finalResultType + " vs " + resultTypes.get(i) + " for pattern(s)");
             }
             finalResultType = unifier.applySubstitution(finalResultType, resultSub);
-            System.out.println("DEBUG: Unified result type after pattern " + i + ": " + finalResultType);
+            AppLogger.info("DEBUG: Unified result type after pattern " + i + ": " + finalResultType);
         }
 
         // 8. Apply final substitutions before returning
         Type resolvedResultType = unifier.applySubstitution(finalResultType, unifier.getEnv());
-        System.out.println("DEBUG: Final result type of match: " + resolvedResultType);
+        AppLogger.info("DEBUG: Final result type of match: " + resolvedResultType);
 
         Type input = unifier.applySubstitution(inputType, unifier.getEnv());
         // Proper exhaustiveness check
@@ -378,79 +217,6 @@ public class Match extends Term {
         String[] parts = cleaned.split("\\s+");
         return parts.length > 0 ? parts[0] : null;
     }
-
-
-//    protected Type computeType(Map<String, Type> env, Unifier unifier) {
-//        if (cases.isEmpty()) {
-//            throw new TypeError("Match expression must have at least one case.");
-//        }
-//
-//        // 1. Compute the type of the input term being matched
-//        Type inputType = inputTerm.computeType(env, unifier);
-//
-//        // 2. First pass: collect all pattern types and ensure they're compatible
-//        List<Type> patternTypes = new ArrayList<>();
-//        List<Map<String, Type>> patternEnvironments = new ArrayList<>();
-//
-//        for (Case caseItem : cases) {
-//            Map<String, Type> patternEnv = new HashMap<>(env);
-//            Type patternType = caseItem.getPattern().computeType(patternEnv, unifier);
-//            patternTypes.add(patternType);
-//            patternEnvironments.add(patternEnv);
-//        }
-//
-//        // Unify all pattern types
-//        Type unifiedPatternType = patternTypes.get(0);
-//        for (int i = 1; i < patternTypes.size(); i++) {
-//            Map<TVar, Type> patternSub = unifier.unify(unifiedPatternType, patternTypes.get(i));
-//            if (patternSub == null) {
-//                throw new TypeError("Pattern types are incompatible: " +
-//                    unifiedPatternType + " vs " + patternTypes.get(i));
-//            }
-//            unifiedPatternType = unifier.applySubstitution(unifiedPatternType, patternSub);
-//        }
-//
-//        // 3. Unify the unified pattern type with the input type
-//        Map<TVar, Type> inputSub = unifier.unify(unifiedPatternType, inputType);
-//        System.out.println("The unification with the input is -> " + inputSub);
-//
-//        if (inputSub == null) {
-//            throw new TypeError("Pattern type " + unifiedPatternType +
-//                " does not match input type " + inputType);
-//        }
-//
-//        // 4. Second pass: ensure all result expressions have compatible types
-//        Type resultType = null;
-//
-//        for (int i = 0; i < cases.size(); i++) {
-//            Case caseItem = cases.get(i);
-//            Map<String, Type> resultEnv = patternEnvironments.get(i);
-//
-//            // Compute result type using the environment with pattern-bound variables
-//            Type caseResultType = caseItem.getResult().computeType(resultEnv, unifier);
-//
-//            if (resultType == null) {
-//                resultType = caseResultType;
-//            } else {
-//                Map<TVar, Type> resultSub = unifier.unify(resultType, caseResultType);
-//                if (resultSub == null) {
-//                    throw new IllegalArgumentException(
-//                        "Result types are incompatible: " +
-//                            resultType + " vs " + caseResultType +
-//                            " for pattern(s) " + caseItem.getPattern() +
-//                            (i > 0 ? " and " + cases.get(i - 1).getPattern() : "")
-//                    );
-//                }
-//                resultType = unifier.applySubstitution(resultType, resultSub);
-//            }
-//        }
-//        System.out.println("The resultType of the match is -> " + resultType);
-//       // return resultType;
-//        // Apply final substitutions before returning
-//        Type resolvedResultType = unifier.applySubstitution(resultType, unifier.getEnv());
-//        return resolvedResultType;
-//    }
-
 
     @Override
     public Term eval(Map<String, Term> env) {
