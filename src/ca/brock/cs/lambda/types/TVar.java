@@ -1,5 +1,9 @@
 package ca.brock.cs.lambda.types;
 
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
+
 public class TVar extends Type {
     private static int nextVarId = 0;
     private static int nextGenericId = 0;
@@ -25,7 +29,7 @@ public class TVar extends Type {
 
     @Override
     public String toString() {
-       return name;
+        return name;
     }
 
     @Override
@@ -40,4 +44,30 @@ public class TVar extends Type {
     public int hashCode() {
         return name.hashCode();
     }
+
+    @Override
+    public Type apply(Map<TVar, Type> s) {
+        // If this type variable is in the substitution map, return the substituted type.
+        // Otherwise, return itself.
+        if (s.containsKey(this)) {
+            return s.get(this);
+        }
+        return this;
+    }
+
+    @Override
+    public Set<TVar> getFreeTypeVariables() {
+        // A type variable's only free variable is itself.
+        return Collections.singleton(this);
+    }
+
+
+    @Override
+    public Type deepCloneAndFresh(Unifier unifier) {
+        // When cloning a type variable, we must create a brand new, fresh type variable
+        //return unifier.fresh();
+        return TVar.fresh();
+    }
+
+
 }

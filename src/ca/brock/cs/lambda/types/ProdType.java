@@ -1,5 +1,8 @@
 package ca.brock.cs.lambda.types;
 
+import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
 
 // Product type (e.g., α × β)
 public class ProdType extends Type {
@@ -36,5 +39,26 @@ public class ProdType extends Type {
     @Override
     public int hashCode() {
         return left.hashCode() + right.hashCode();
+    }
+
+    @Override
+    public Type apply(Map<TVar, Type> s) {
+        // Apply the substitution recursively to both the left and right types.
+        return new ProdType(left.apply(s), right.apply(s));
+    }
+
+    @Override
+    public Set<TVar> getFreeTypeVariables() {
+        // Collect free type variables from both the left and right types.
+        Set<TVar> freeVars = new HashSet<>();
+        freeVars.addAll(left.getFreeTypeVariables());
+        freeVars.addAll(right.getFreeTypeVariables());
+        return freeVars;
+    }
+
+    @Override
+    public Type deepCloneAndFresh(Unifier unifier) {
+        // Recursively clone the input and output types
+        return new FType(left.deepCloneAndFresh(unifier), right.deepCloneAndFresh(unifier));
     }
 }

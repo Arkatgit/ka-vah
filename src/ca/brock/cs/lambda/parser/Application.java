@@ -5,12 +5,16 @@ import ca.brock.cs.lambda.combinators.CombinatorApplication;
 import ca.brock.cs.lambda.intermediate.IntermediateApplication;
 import ca.brock.cs.lambda.intermediate.IntermediateTerm;
 import ca.brock.cs.lambda.logging.AppLogger;
+import ca.brock.cs.lambda.types.AlgebraicDataType;
 import ca.brock.cs.lambda.types.FType;
 import ca.brock.cs.lambda.types.TVar;
 import ca.brock.cs.lambda.types.Type;
+import ca.brock.cs.lambda.types.TypeError;
 import ca.brock.cs.lambda.types.Unifier;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -32,7 +36,7 @@ public class Application extends Term {
     public Term getArgument(){
         return argument;
     }
-    @Override
+
     public String toStringPrec(int prec) {
         // Case 1: Handle (* t) -> Application(Application(Constant("flip"), Constant("*")), r)
         if (function instanceof Application) {
@@ -102,146 +106,43 @@ public class Application extends Term {
 
     @Override
     protected Type computeType(Map<String, Type> env, Unifier unifier) {
-        AppLogger.info("--- Application: " + function + " " + argument);
-        AppLogger.info("Environment: " + env);
+        Type functionType = function.computeType(env, unifier);
+        Type argumentType = argument.computeType(env, unifier);
 
-        AppLogger.info("Typing function: " + function + " with environment: " + env);
-        function.type(env, unifier);
-        Type funType = function.getType();
-        AppLogger.info("Type of function Term node: " + function.getType()); // Check the Term node's type
+        // Apply current substitutions
+        functionType = unifier.applySubstitution(functionType, unifier.getEnv());
+        argumentType = unifier.applySubstitution(argumentType, unifier.getEnv());
 
-        AppLogger.info("Typing argument: " + argument + " with environment: " + env);
-        argument.type(env, unifier);
-        Type argType = argument.getType();
-        AppLogger.info("Type of argument Term node: " + argument.getType()); // Check the Term node's type
+        TVar resultType = TVar.fresh(); //unifier.fresh();
 
-        TVar resultType = TVar.fresh();
-        AppLogger.info("Fresh result type for application: " + resultType);
-        AppLogger.info("Type of function (before unify): " + funType);
-        AppLogger.info("Type of argument (before unify): " + argType);
-        AppLogger.info("Expected function type: (" + argType + " → " + resultType + ")");
+        // The function should have type (argumentType -> resultType)
+        FType expectedFunctionType = new FType(argumentType, resultType);
 
-        Map<TVar, Type> substitution = unifier.unify(
-            funType,
-            new FType(argType, resultType)
-        );
-
-        AppLogger.info("Unifier environment after unification: " + unifier.getEnv());
-        AppLogger.info("Substitution result: " + substitution);
-
-        if (substitution == null) {
-            throw new RuntimeException("Type mismatch in application: cannot apply " +
-                funType + " to " + argType);
+        AppLogger.info("Application: ArgumentType " + argumentType + " result type " + resultType);
+        Map<TVar, Type> sub = unifier.unify(functionType, expectedFunctionType);
+        if (sub == null) {
+            throw new TypeError("Type mismatch in application: cannot apply " +
+                functionType + " to " + argumentType);
         }
 
-        // Apply the substitution to the types of function and argument immediately
-        function.setType(unifier.applySubstitution(function.getType(), substitution)); // Use unifier instance
-        argument.setType(unifier.applySubstitution(argument.getType(), substitution)); // Use unifier instance
-        AppLogger.info("Type of function Term node (after unify): " + function.getType());
-        AppLogger.info("Type of argument Term node (after unify): " + argument.getType());
-
-        Type finalResultType = unifier.applySubstitution(resultType, substitution); // Use unifier instance
-        AppLogger.info("Result type after substitution: " + finalResultType);
-
-        return finalResultType;
+        return unifier.applySubstitution(resultType, unifier.getEnv());
     }
+
+
     @Override
     public Term eval(Map<String, Term> env) {
         Term evaluatedFunction = function.eval(env);
         Term evaluatedArgument = argument.eval(env);
 
-        // Case 1: Function is an abstraction (λx. M) N -> M[x:=N]
         if (evaluatedFunction instanceof Abstraction) {
-            Abstraction abs = (Abstraction) evaluatedFunction;
-            return abs.getBody().substitute(abs.getParameter(), evaluatedArgument).eval(env);
+            Abstraction abstraction = (Abstraction) evaluatedFunction;
+            // Beta reduction
+            return abstraction.getBody().substitute(abstraction.getParameter(), evaluatedArgument).eval(env);
         }
-        // Case 2: Function is a partial application of a binary operator (e.g., ((+) 5) 10)
-        else if (evaluatedFunction instanceof Application) {
-            Application innerApp = (Application) evaluatedFunction;
-            Term innerFunc = innerApp.getFunction();
-            Term innerArg = innerApp.getArgument();
 
-            if (innerFunc instanceof Constant) {
-                Constant opConst = (Constant) innerFunc;
-                // Now, opConst is the operator (+, -, *, =, <=, and, or)
-                // innerArg is the first operand
-                // evaluatedArgument is the second operand
-
-                switch (opConst.getValue()) {
-                    case "+":
-                        if (innerArg instanceof IntegerLiteral && evaluatedArgument instanceof IntegerLiteral) {
-                            return new IntegerLiteral(((IntegerLiteral) innerArg).getValue() + ((IntegerLiteral) evaluatedArgument).getValue());
-                        }
-                        break;
-                    case "-":
-                        if (innerArg instanceof IntegerLiteral && evaluatedArgument instanceof IntegerLiteral) {
-                            return new IntegerLiteral(((IntegerLiteral) innerArg).getValue() - ((IntegerLiteral) evaluatedArgument).getValue());
-                        }
-                        break;
-                    case "*":
-                        if (innerArg instanceof IntegerLiteral && evaluatedArgument instanceof IntegerLiteral) {
-                            return new IntegerLiteral(((IntegerLiteral) innerArg).getValue() * ((IntegerLiteral) evaluatedArgument).getValue());
-                        }
-                        break;
-                    case "=":
-                        // Handle equality for both integers and booleans
-                        if (innerArg instanceof IntegerLiteral && evaluatedArgument instanceof IntegerLiteral) {
-                            return new BooleanLiteral(((IntegerLiteral) innerArg).getValue() == ((IntegerLiteral) evaluatedArgument).getValue());
-                        } else if (innerArg instanceof BooleanLiteral && evaluatedArgument instanceof BooleanLiteral) {
-                            return new BooleanLiteral(((BooleanLiteral) innerArg).getValue() == ((BooleanLiteral) evaluatedArgument).getValue());
-                        }
-                        break;
-                    case "<=":
-                        if (innerArg instanceof IntegerLiteral && evaluatedArgument instanceof IntegerLiteral) {
-                            return new BooleanLiteral(((IntegerLiteral) innerArg).getValue() <= ((IntegerLiteral) evaluatedArgument).getValue());
-                        }
-                        break;
-                    case "and":
-                        if (innerArg instanceof BooleanLiteral && evaluatedArgument instanceof BooleanLiteral) {
-                            return new BooleanLiteral(((BooleanLiteral) innerArg).getValue() && ((BooleanLiteral) evaluatedArgument).getValue());
-                        }
-                        break;
-                    case "or":
-                        if (innerArg instanceof BooleanLiteral && evaluatedArgument instanceof BooleanLiteral) {
-                            return new BooleanLiteral(((BooleanLiteral) innerArg).getValue() || ((BooleanLiteral) evaluatedArgument).getValue());
-                        }
-                        break;
-                    // 'not' is unary, so it shouldn't be here in the binary operator section
-                }
-            }
-        }
-        // Case 3: Function is a constant operator (like "+", "not", "flip")
-        else if (evaluatedFunction instanceof Constant) {
-            Constant constFunc = (Constant) evaluatedFunction;
-            switch (constFunc.getValue()) {
-                case "+":
-                case "-":
-                case "*":
-                case "=":
-                case "<=":
-                case "and":
-                case "or":
-                    // These are binary operators, they need a second argument.
-                    // So, return a new Application representing the partial application.
-                    return new Application(evaluatedFunction, evaluatedArgument);
-                case "not":
-                    if (evaluatedArgument instanceof BooleanLiteral) {
-                        return new BooleanLiteral(!((BooleanLiteral) evaluatedArgument).getValue());
-                    }
-                    break;
-                case "flip":
-                    // (flip f) x y = f y x
-                    if (evaluatedArgument instanceof Constant) {
-                        // Creates (λx. λy. f y x)
-                        return new Abstraction("x", new Abstraction("y", new Application(new Application(evaluatedArgument, new Variable("y")), new Variable("x"))));
-                    }
-                    break;
-                default:
-                    // For other constants (like "True", "False", "123", or variables that might be in env),
-                    // or if the argument type doesn't match the operator's expectation,
-                    // just return the application, indicating it's not reducible further at this point.
-                    break;
-            }
+        // Return a partially applied constructor
+        if (evaluatedFunction instanceof Constructor) {
+            return new Application(evaluatedFunction, evaluatedArgument);
         }
 
         // Default: no reduction happened, return the application with evaluated sub-terms.
