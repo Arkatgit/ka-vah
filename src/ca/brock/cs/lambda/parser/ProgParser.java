@@ -1,5 +1,6 @@
 package ca.brock.cs.lambda.parser;
 
+import ca.brock.cs.lambda.combinators.Combinator;
 import ca.brock.cs.lambda.logging.AppLogger;
 import ca.brock.cs.lambda.types.*;
 import org.jparsec.OperatorTable;
@@ -94,7 +95,7 @@ public class ProgParser {
                         Type resultType = new AlgebraicDataType(adtName, new ArrayList<>(tVars), null);
                         for (int i = cd.types.size() - 1; i >= 0; i--) {
                             // Apply type parameter substitution to argument types
-                            Type argType = applyTypeParameters(cd.types.get(i), typeParamMap);
+                             Type argType = applyTypeParameters(cd.types.get(i), typeParamMap);
                             resultType = new FType(argType, resultType);
                         }
                         constructorType = resultType;
@@ -231,6 +232,9 @@ public class ProgParser {
             progOperators.token("="),
             getTermParser(symbolMap),
             (name, equals, term) -> {
+                System.out.println("DEBUG: Parsing function '" + name + "' with term: " + term);
+                System.out.println("DEBUG: Term class: " + term.getClass().getSimpleName());
+
                 // Check if a signature for this function exists
                 AppLogger.info("DEBUG: Parsing function " + name + " with term: " + term);
                 Type type = signatureMap.remove(name);
@@ -275,6 +279,75 @@ public class ProgParser {
             (match, input, with, cases, end) -> new Match(input, cases)
         );
 
+//        Parser<Term> operatorSection = Parsers.or(
+//            // Handle standalone operator sections (*), (+), (-)
+//            Parsers.sequence(progOperators.token("("), progOperators.token("*"), progOperators.token(")"),
+//                (open, op, close) -> new Constant("*")),
+//            Parsers.sequence(progOperators.token("("), progOperators.token("+"), progOperators.token(")"),
+//                (open, op, close) -> new Constant("+")),
+//            Parsers.sequence(progOperators.token("("), progOperators.token("-"), progOperators.token(")"),
+//                (open, op, close) -> new Constant("-")),
+//
+//            // Handle right sections (* t), (+ t), (- t)) using flip
+//            Parsers.sequence(progOperators.token("("), progOperators.token("*"), termRef.lazy(), progOperators.token(")"),
+//                (open, op, r, close) -> new Application(new Application(new Constant("flip"), new Constant("*")), r)),
+//            Parsers.sequence(progOperators.token("("), progOperators.token("+"), termRef.lazy(), progOperators.token(")"),
+//                (open, op, r, close) -> new Application(new Application(new Constant("flip"), new Constant("+")), r)),
+//            Parsers.sequence(progOperators.token("("), progOperators.token("-"), termRef.lazy(), progOperators.token(")"),
+//                (open, op, r, close) -> new Application(new Application(new Constant("flip"), new Constant("-")), r)),
+//
+//            // Handle left sections (t *), (t +), (t -)
+//            Parsers.sequence(progOperators.token("("), termRef.lazy(), progOperators.token("*"), progOperators.token(")"),
+//                (open, l, op, close) -> new Application(new Constant("*"), l)),
+//            Parsers.sequence(progOperators.token("("), termRef.lazy(), progOperators.token("+"), progOperators.token(")"),
+//                (open, l, op, close) -> new Application(new Constant("+"), l)),
+//            Parsers.sequence(progOperators.token("("), termRef.lazy(), progOperators.token("-"), progOperators.token(")"),
+//                (open, l, op, close) -> new Application(new Constant("-"), l))
+//        );
+
+        Parser<Term> operatorSection = Parsers.or(
+            // Handle right sections (* t), (+ t), (- t), (/ t) using flip
+            Parsers.sequence(progOperators.token("("), progOperators.token("*"), termRef.lazy(), progOperators.token(")"),
+                (open, op, r, close) -> new Application(new Application(new Constant("flip"), new Constant("*")), r)),
+            Parsers.sequence(progOperators.token("("), progOperators.token("+"), termRef.lazy(), progOperators.token(")"),
+                (open, op, r, close) -> new Application(new Application(new Constant("flip"), new Constant("+")), r)),
+            Parsers.sequence(progOperators.token("("), progOperators.token("-"), termRef.lazy(), progOperators.token(")"),
+                (open, op, r, close) -> new Application(new Application(new Constant("flip"), new Constant("-")), r)),
+            Parsers.sequence(progOperators.token("("), progOperators.token("/"), termRef.lazy(), progOperators.token(")"),
+                (open, op, r, close) -> new Application(new Application(new Constant("flip"), new Constant("/")), r)),
+
+            // Handle left sections (t *), (t +), (t -), (t /)
+            Parsers.sequence(progOperators.token("("), termRef.lazy(), progOperators.token("*"), progOperators.token(")"),
+                (open, l, op, close) -> new Application(new Constant("*"), l)),
+            Parsers.sequence(progOperators.token("("), termRef.lazy(), progOperators.token("+"), progOperators.token(")"),
+                (open, l, op, close) -> new Application(new Constant("+"), l)),
+            Parsers.sequence(progOperators.token("("), termRef.lazy(), progOperators.token("-"), progOperators.token(")"),
+                (open, l, op, close) -> new Application(new Constant("-"), l)),
+            Parsers.sequence(progOperators.token("("), termRef.lazy(), progOperators.token("/"), progOperators.token(")"),
+                (open, l, op, close) -> new Application(new Constant("/"), l)),
+
+            // Handle logical operator sections
+            Parsers.sequence(progOperators.token("("), progOperators.token("and"), termRef.lazy(), progOperators.token(")"),
+                (open, op, r, close) -> new Application(new Application(new Constant("flip"), new Constant("and")), r)),
+            Parsers.sequence(progOperators.token("("), progOperators.token("or"), termRef.lazy(), progOperators.token(")"),
+                (open, op, r, close) -> new Application(new Application(new Constant("flip"), new Constant("or")), r)),
+
+            // Handle left sections for logical operators (t and), (t or)
+            Parsers.sequence(progOperators.token("("), termRef.lazy(), progOperators.token("and"), progOperators.token(")"),
+                (open, l, op, close) -> new Application(new Constant("and"), l)),
+            Parsers.sequence(progOperators.token("("), termRef.lazy(), progOperators.token("or"), progOperators.token(")"),
+                (open, l, op, close) -> new Application(new Constant("or"), l)),
+
+            // Operator as function: (+), (*), etc.
+            Parsers.sequence(progOperators.token("("), progOperators.token("*"), progOperators.token(")"), (open, op, close) -> new Constant("*")),
+            Parsers.sequence(progOperators.token("("), progOperators.token("+"), progOperators.token(")"), (open, op, close) -> new Constant("+")),
+            Parsers.sequence(progOperators.token("("), progOperators.token("-"), progOperators.token(")"), (open, op, close) -> new Constant("-")),
+            Parsers.sequence(progOperators.token("("), progOperators.token("/"), progOperators.token(")"), (open, op, close) -> new Constant("/")),
+            Parsers.sequence(progOperators.token("("), progOperators.token("and"), progOperators.token(")"), (open, op, close) -> new Constant("and")),
+            Parsers.sequence(progOperators.token("("), progOperators.token("or"), progOperators.token(")"), (open, op, close) -> new Constant("or"))
+        );
+
+
         Parser<Term> atom = Parsers.or(
             Terminals.Identifier.PARSER.map(id -> {
                 DefinedValue value = symbolMap.get(id);
@@ -285,10 +358,7 @@ public class ProgParser {
             }),
             progOperators.token("True").retn(new BooleanLiteral(true)),
             progOperators.token("False").retn(new BooleanLiteral(false)),
-            Terminals.IntegerLiteral.PARSER.map(s -> new IntegerLiteral(Integer.valueOf(s))),
-            Parsers.sequence(progOperators.token("("), progOperators.token("*"), progOperators.token(")"), (open, op, close) -> new Constant("*")),
-            Parsers.sequence(progOperators.token("("), progOperators.token("+"), progOperators.token(")"), (open, op, close) -> new Constant("+")),
-            Parsers.sequence(progOperators.token("("), progOperators.token("-"), progOperators.token(")"), (open, op, close) -> new Constant("-"))
+            Terminals.IntegerLiteral.PARSER.map(s -> new IntegerLiteral(Integer.valueOf(s)))
         );
 
         // Parse parenthesized expressions
@@ -296,6 +366,7 @@ public class ProgParser {
 
         // Parse all simple terms (atoms, parentheses, and other basic constructs)
         Parser<Term> simpleTerm = Parsers.or(
+            operatorSection,
             parens,
             atom,
             Parsers.sequence(progOperators.token("\u03BB"), Terminals.Identifier.PARSER, progOperators.token("."), termRef.lazy(),
@@ -471,21 +542,53 @@ public class ProgParser {
      * that a "main" function is defined.
      * program  = { declaration } functionBody
      */
+//    public static Parser<ParsedProgram> programParser(Map<String, DefinedValue> symbolMap) {
+//        Map<String, Type> signatureMap = new HashMap<>();
+//        return declarationParser(symbolMap, signatureMap).many().map(declarations -> {
+//            if (!signatureMap.isEmpty()) {
+//                String missingSignatures = String.join(", ", signatureMap.keySet());
+//                throw new ParserException("Signatures declared without definitions for: " + missingSignatures);
+//            }
+//            DefinedValue mainValue = symbolMap.get("main");
+//            if (mainValue == null || !(mainValue instanceof FunctionDefinition)) {
+//                throw new ParserException("A 'main' function is required but not found or is not a function.");
+//            }
+//            return new ParsedProgram(symbolMap, (FunctionDefinition) mainValue);
+//        });
+//    }
+    /**
+     * Parses the entire program, which is a series of declarations, and validates
+     * that a "main" function is defined.
+     * program  = { declaration } functionBody
+     */
     public static Parser<ParsedProgram> programParser(Map<String, DefinedValue> symbolMap) {
         Map<String, Type> signatureMap = new HashMap<>();
-        return declarationParser(symbolMap, signatureMap).many().map(declarations -> {
+
+        // Create a proper parser that processes ALL declarations first
+        Parser<List<Void>> declarationsParser = declarationParser(symbolMap, signatureMap)
+            //.followedBy(progOperators.token(";").optional())
+            .many();
+
+        return declarationsParser.map(declarations -> {
+            // All declarations have been processed and constructors are in symbolMap
+
+            // Check for orphaned signatures
             if (!signatureMap.isEmpty()) {
                 String missingSignatures = String.join(", ", signatureMap.keySet());
                 throw new ParserException("Signatures declared without definitions for: " + missingSignatures);
             }
+
+            // Now look for main function - it should be in symbolMap after processing all declarations
             DefinedValue mainValue = symbolMap.get("main");
             if (mainValue == null || !(mainValue instanceof FunctionDefinition)) {
+                // Debug what's actually in symbolMap
+                System.err.println("Symbols in map: " + symbolMap.keySet());
                 throw new ParserException("A 'main' function is required but not found or is not a function.");
             }
+
             return new ParsedProgram(symbolMap, (FunctionDefinition) mainValue);
         });
     }
-
     /**
      * The public parse method that runs the main program parser.
      */
@@ -593,143 +696,350 @@ public class ProgParser {
         }
     }
 
-    public static void main(String[] args) {
-        Map<String, DefinedValue> symbolMap = new HashMap<>();
+//    public static void main(String[] args) {
+//        Map<String, DefinedValue> symbolMap = new HashMap<>();
+//
+//        String[] testPrograms = {
+//
+//            // Test 1
+//            "fact : Int -> Int;\n" +
+//                "fact = rec f. λn.\n" +
+//                "    if n <= 1\n" +
+//                "    then 1\n" +
+//                "    else n * (f (n - 1));\n\n" +
+//                "main : Int; " +
+//                "main = fact 5;",
+//
+//            // Test 2: Basic list operations with type error (should fail)
+//            "data list a = emptylist | cons a (list a);\n" +
+//                "length : list a -> Int;\n" +
+//                "length = λxs. match xs with\n" +
+//                "    emptylist -> 0\n" +  // Type error: should return Int, not Bool
+//                "    | cons x xs_tail -> 1 + (length xs_tail)\n" +
+//                "end;\n" +
+//                "main = length (cons 1 (cons 2 emptylist));\n",
+//
+//            // Test 3: Correct list length function
+//            "data list a = emptylist | cons a (list a);\n" +
+//                "length : list a -> Int;\n" +
+//                "length = λxs. match xs with\n" +
+//                "    emptylist -> 0\n" +  // Correct: returns Int
+//                "    | cons x xs_tail -> 1 + (length xs_tail)\n" +
+//                "end;\n" +
+//                "main = length (cons 1 (cons 2 emptylist));\n",
+//
+//            // Test 4: Basic arithmetic
+//            "add : Int -> Int -> Int;\n" +
+//                "add = λy. λx. x + y;\n" +
+//                "main = add 5 3;",
+//
+//            "compose : (b -> c) -> (a -> b) -> (a -> c);\n" +
+//                "compose = λf. λg. λx. f (g x);\n" +
+//                "double : Int -> Int;\n" +
+//                "double = λx. x * 2;\n" +
+//                "isEven : Int -> Bool;\n" +
+//                "isEven = λy. if y/ 2 = 0 then True else False  ;\n" +
+//                "main = compose isEven double 5;",
+//
+//            // Test 6: Tree data type with pattern matching
+//            "data Tree a = Leaf a | Node (Tree a) a (Tree a);\n" +
+//                "isNode : Tree Int -> Bool;\n" +
+//                "isNode = λt. match t with Leaf x -> False | Node l y r -> True end;\n" +
+//                "main = isNode (Node (Leaf 1) 2 (Leaf 3));",
+//
+//            // Test 7: Recursive function with correct types
+//            "data list a = emptylist | cons a (list a);\n" +
+//                "sum : list Int -> Int;\n" +
+//                "sum = λxs. match xs with\n" +
+//                "    emptylist -> 0\n" +
+//                "    | cons x xs_tail -> x + (sum xs_tail)\n" +
+//                "end;\n" +
+//                "main = sum (cons 1 (cons 2 (cons 3 emptylist)));",  // Should return 6
+//
+//            // Test 8: Higher-order functions
+//            "data list a = emptylist | cons a (list a);\n" +
+//                "map : (a -> b) -> list a -> list b;\n" +
+//                "map = λf. λxs. match xs with\n" +
+//                "    emptylist -> emptylist\n" +
+//                "    | cons x xs_tail -> cons (f x) (map f xs_tail)\n" +
+//                "end;\n" +
+//                "double : Int -> Int;\n" +
+//                "double = λx. x * 2;\n" +
+//                "main = map double (cons 1 (cons 2 emptylist));",  // Should return [2, 4]
+//
+//            // Test 9: Polymorphic identity function
+//            "id : a -> a;\n" +
+//                "id = λx. x;\n" +
+//                "main = id 42;",  // Should work with any type
+//
+//            // Test 10:
+//            "data list a = emptylist | cons a (list a);\n" +
+//                "badFunction : list Int -> Int;\n" +
+//                "badFunction = λxs. match xs with\n" +
+//                "    emptylist -> 0\n" +
+//                "    | cons x xs_tail -> x + badFunction xs_tail\n" +
+//                "end;\n" +
+//                "main = badFunction (cons 1 emptylist);",
+//
+//
+//            // Test 11: Mutual recursion
+//            "data list a = emptylist | cons a (list a);\n" +
+//                "evenLength : list a -> Bool;\n" +
+//                "evenLength = λxs. match xs with\n" +
+//                "    emptylist -> True\n" +
+//                "    | cons x xs_tail -> oddLength xs_tail\n" +
+//                "end;\n" +
+//                "oddLength : list a -> Bool;\n" +
+//                "oddLength = λxs. match xs with\n" +
+//                "    emptylist -> False\n" +
+//                "    | cons x xs_tail -> evenLength xs_tail\n" +
+//                "end;\n" +
+//                "main = evenLength (cons 1 (cons 2 emptylist));",  // Should return True
+//
+//            // Test 12: Complex type application
+//            "data Box a = MBox a;\n" +
+//                "applyToBox : (a -> b) -> Box a -> Box b;\n" +
+//                "applyToBox = λf. λb. match b with MBox x -> MBox (f x) end;\n" +
+//                "increment : Int -> Int;\n" +
+//                "increment = λx. x + 1;\n" +
+//                "main = applyToBox increment (MBox 5);",  // Should return Box 6
+//
+//            // Test 14: Higher-order function with complex type
+//            "compose3 : (c -> d) -> (b -> c) -> (a -> b) -> (a -> d);\n" +
+//                "compose3 = λf. λg. λh. λx. f (g (h x));\n" +
+//                "inc : Int -> Int;\n" +
+//                "inc = λx. x + 1;\n" +
+//                "triple : Int -> Int;\n" +
+//                "triple = λx. x * 3;\n" +
+//                "main = compose3 inc triple inc 5;",
+//
+//            // Test 15: Multiple type parameters
+//            "data Either a b = Left a | Right b;\n" +
+//                "swap : (Either a b) -> (Either b a);\n" +  // Removed extra parentheses
+//                "swap = λe. match e with\n" +
+//                "    Left x -> Right x\n" +
+//                "    | Right y -> Left y\n" +
+//                "end;\n" +
+//                "main = swap (Left 42);",
+//
+//        };
+//
+//        for (int i = 0; i < testPrograms.length; i++) {
+//            try {
+//                System.out.println("=== Test " + (i + 1) + " ===");
+//                checkAndPrintTypes(testPrograms[i]);
+//                System.out.println("Test " + (i + 1) + " passed!\n");
+//            } catch (Exception e) {
+//                System.err.println("Test " + (i + 1) + " failed with error: " + e.getMessage() + "\n");
+//            }
+//        }
+//    }
+public static void main(String[] args) {
+    System.out.println("=== COMPREHENSIVE TERM TYPE TESTS ===\n");
 
-        String[] testPrograms = {
+    // 1. Basic literals and variables
+    testProgram("main = 42;", "Integer literal");
+    testProgram("main = True;", "Boolean literal true");
+    testProgram("main = False;", "Boolean literal false");
+    testProgram("x = 10; main = x;", "Variable reference");
 
-            // Test 1
-            "fact : Int -> Int;\n" +
-                "fact = rec f. λn.\n" +
-                "    if n <= 1\n" +
-                "    then 1\n" +
-                "    else n * (f (n - 1));\n\n" +
-                "main : Int; " +
-                "main = fact 5;",
+    // 2. Arithmetic operations
+    testProgram("main = 3 + 4;", "Addition");
+    testProgram("main = 10 - 3;", "Subtraction");
+    testProgram("main = 6 * 7;", "Multiplication");
+    testProgram("main = 8 / 2;", "Division");
+    testProgram("main = (2 + 3) * 4;", "Arithmetic with parentheses");
 
-            // Test 2: Basic list operations with type error (should fail)
-            "data list a = emptylist | cons a (list a);\n" +
-                "length : list a -> Int;\n" +
-                "length = λxs. match xs with\n" +
-                "    emptylist -> 0\n" +  // Type error: should return Int, not Bool
-                "    | cons x xs_tail -> 1 + (length xs_tail)\n" +
-                "end;\n" +
-                "main = length (cons 1 (cons 2 emptylist));\n",
+    // 3. Logical operations
+    testProgram("main = True and False;", "Logical AND");
+    testProgram("main = True or False;", "Logical OR");
+    testProgram("main = not True;", "Logical NOT");
+    testProgram("main = not (True and False);", "Nested logical operations");
 
-            // Test 3: Correct list length function
-            "data list a = emptylist | cons a (list a);\n" +
-                "length : list a -> Int;\n" +
-                "length = λxs. match xs with\n" +
-                "    emptylist -> 0\n" +  // Correct: returns Int
-                "    | cons x xs_tail -> 1 + (length xs_tail)\n" +
-                "end;\n" +
-                "main = length (cons 1 (cons 2 emptylist));\n",
+    // 4. Comparisons
+    testProgram("main = 5 = 5;", "Equality true");
+    testProgram("main = 5 = 6;", "Equality false");
+    testProgram("main = 3 <= 4;", "Less than or equal true");
+    testProgram("main = 5 <= 3;", "Less than or equal false");
 
-            // Test 4: Basic arithmetic
-            "add : Int -> Int -> Int;\n" +
-                "add = λy. λx. x + y;\n" +
-                "main = add 5 3;",
+    // 5. Conditional expressions (if-then-else)
+    testProgram("main = if True then 1 else 0;", "Conditional true branch");
+    testProgram("main = if False then 1 else 0;", "Conditional false branch");
+    testProgram("main = if (3 <= 4) then 100 else 200;", "Conditional with comparison");
+    testProgram("main = if (True and False) then 1 else if True then 2 else 3;", "Nested conditionals");
 
-            "compose : (b -> c) -> (a -> b) -> (a -> c);\n" +
-                "compose = λf. λg. λx. f (g x);\n" +
-                "double : Int -> Int;\n" +
-                "double = λx. x * 2;\n" +
-                "isEven : Int -> Bool;\n" +
-                "isEven = λy. if y/ 2 = 0 then True else False  ;\n" +
-                "main = compose isEven double 5;",
+    // 6. Lambda abstractions (functions)
+    testProgram("main = λx.x;", "Identity function");
 
-            // Test 6: Tree data type with pattern matching
-            "data Tree a = Leaf a | Node (Tree a) a (Tree a);\n" +
-                "isNode : Tree Int -> Bool;\n" +
-                "isNode = λt. match t with Leaf x -> False | Node l y r -> True end;\n" +
-                "main = isNode (Node (Leaf 1) 2 (Leaf 3));",
+    testProgram("main = (λx.(+) x x) 5;", " Simple function call");
 
-            // Test 7: Recursive function with correct types
-            "data list a = emptylist | cons a (list a);\n" +
-                "sum : list Int -> Int;\n" +
-                "sum = λxs. match xs with\n" +
-                "    emptylist -> 0\n" +
-                "    | cons x xs_tail -> x + (sum xs_tail)\n" +
-                "end;\n" +
-                "main = sum (cons 1 (cons 2 (cons 3 emptylist)));",  // Should return 6
-
-            // Test 8: Higher-order functions
-            "data list a = emptylist | cons a (list a);\n" +
-                "map : (a -> b) -> list a -> list b;\n" +
-                "map = λf. λxs. match xs with\n" +
-                "    emptylist -> emptylist\n" +
-                "    | cons x xs_tail -> cons (f x) (map f xs_tail)\n" +
-                "end;\n" +
-                "double : Int -> Int;\n" +
-                "double = λx. x * 2;\n" +
-                "main = map double (cons 1 (cons 2 emptylist));",  // Should return [2, 4]
-
-            // Test 9: Polymorphic identity function
-            "id : a -> a;\n" +
-                "id = λx. x;\n" +
-                "main = id 42;",  // Should work with any type
-
-            // Test 10:
-            "data list a = emptylist | cons a (list a);\n" +
-                "badFunction : list Int -> Int;\n" +
-                "badFunction = λxs. match xs with\n" +
-                "    emptylist -> 0\n" +
-                "    | cons x xs_tail -> x + badFunction xs_tail\n" +
-                "end;\n" +
-                "main = badFunction (cons 1 emptylist);",
+    testProgram("main = λx.λy.x;", "K combinator (constant function)");
+    testProgram("main = λf.λg.λx.f x (g x);", "S combinator");
+    testProgram("main = (λx.x + 1) 5;", "Function application");
+    testProgram("main = (λx.λy.x + y) 3 4;", "Curried function application");
+    testProgram("main = λx.x * 3;", "Multiply by 3 function");
+    testProgram("main = λx.λy.x * y + x;", "Function with multiple parameters");
 
 
-            // Test 11: Mutual recursion
-            "data list a = emptylist | cons a (list a);\n" +
-                "evenLength : list a -> Bool;\n" +
-                "evenLength = λxs. match xs with\n" +
-                "    emptylist -> True\n" +
-                "    | cons x xs_tail -> oddLength xs_tail\n" +
-                "end;\n" +
-                "oddLength : list a -> Bool;\n" +
-                "oddLength = λxs. match xs with\n" +
-                "    emptylist -> False\n" +
-                "    | cons x xs_tail -> evenLength xs_tail\n" +
-                "end;\n" +
-                "main = evenLength (cons 1 (cons 2 emptylist));",  // Should return True
+    // 8. Match expressions (pattern matching)
+    testProgram("data Maybe a = Nothing | Just a; main = match Just 42 with Nothing -> 0 | Just x -> x end;", "Match with constructor patterns");
 
-            // Test 12: Complex type application
-            "data Box a = MBox a;\n" +
-                "applyToBox : (a -> b) -> Box a -> Box b;\n" +
-                "applyToBox = λf. λb. match b with MBox x -> MBox (f x) end;\n" +
-                "increment : Int -> Int;\n" +
-                "increment = λx. x + 1;\n" +
-                "main = applyToBox increment (MBox 5);",  // Should return Box 6
+    // 9. Complex expressions combining multiple term types
+    testProgram("main = (λx.if x then 10 else 20) (3 <= 4);", "Function with conditional");
+    testProgram("main = (λf.λx.f (f x)) (λy.y + 1) 5;", "Function composition");
+    testProgram("main = not (5 = 5) or (3 <= 4);", "Complex boolean expression");
+    testProgram("main = (λx.λy.if x <= y then x else y) 10 5;", "Min function with conditional");
 
-            // Test 14: Higher-order function with complex type
-            "compose3 : (c -> d) -> (b -> c) -> (a -> b) -> (a -> d);\n" +
-                "compose3 = λf. λg. λh. λx. f (g (h x));\n" +
-                "inc : Int -> Int;\n" +
-                "inc = λx. x + 1;\n" +
-                "triple : Int -> Int;\n" +
-                "triple = λx. x * 3;\n" +
-                "main = compose3 inc triple inc 5;",
+    // 10. Operator sections
+    testProgram("main = ((+ 1) 2);", "Operator section left");
+    testProgram("main = (1 +) 2;", "Operator section right");
+    testProgram("main = (λx.x * 2) 5;", "Lambda with multiplication");
 
-            // Test 15: Multiple type parameters
-            "data Either a b = Left a | Right b;\n" +
-                "swap : (Either a b) -> (Either b a);\n" +  // Removed extra parentheses
-                "swap = λe. match e with\n" +
-                "    Left x -> Right x\n" +
-                "    | Right y -> Left y\n" +
-                "end;\n" +
-                "main = swap (Left 42);",
+    // 11. Let-style bindings (using function definitions)
+    testProgram("double = λx.x * 2; square = λx.x * x; main = double (square 3);", "Multiple function definitions");
+    testProgram("add = λa.λb.a + b; main = add 5 7;", "Add function");
+    testProgram("triple = λx.x * 3; main = triple 4;", "Triple function");
 
-        };
+    // 12. Constants and built-in operators
+    testProgram("main = (+) 2 3;", "Operator as function");
+    testProgram("main = (and) True False;", "Logical operator as function");
+    testProgram("main = (λx.x) 42;", "Identity function application");
 
-        for (int i = 0; i < testPrograms.length; i++) {
+    // 13. Higher-order functions
+    testProgram("apply = λf.λx.f x; main = apply (λy.y * 2) 21;", "Higher-order function application");
+    testProgram("compose = λf.λg.λx.f (g x); main = compose (λx.x + 1) (λy.y * 2) 5;", "Function composition");
+
+    // 14. Complex nested lambdas
+    testProgram("main = λx.λy.λz.x + y + z;", "Three-parameter addition");
+    testProgram("main = (λx.λy.x * y) 6 7;", "Multiplication function application");
+
+    System.out.println("=== ALL TESTS COMPLETED ===");
+}
+
+    private static void testProgram(String programCode, String description) {
+        try {
+            System.out.println("=== TEST: " + description + " ===");
+            System.out.println("Program: " + programCode);
+
+            // Parse the program
+            Map<String, DefinedValue> symbolMap = new HashMap<>();
+            ParsedProgram parsed;
             try {
-                System.out.println("=== Test " + (i + 1) + " ===");
-                checkAndPrintTypes(testPrograms[i]);
-                System.out.println("Test " + (i + 1) + " passed!\n");
-            } catch (Exception e) {
-                System.err.println("Test " + (i + 1) + " failed with error: " + e.getMessage() + "\n");
+                parsed = parse(programCode, symbolMap);
+            }catch (Exception e)
+            {
+                System.out.println("Parser Error: " + e.getMessage());
+                System.out.println();
+                return;
             }
+            // Debug: show what's in symbolMap
+           // System.out.println("Symbols defined: " + symbolMap.keySet());
+            for (Map.Entry<String, DefinedValue> entry : symbolMap.entrySet()) {
+                //System.out.println("  " + entry.getKey() + " = " + entry.getValue());
+                if (entry.getValue() instanceof FunctionDefinition) {
+                    FunctionDefinition funcDef = (FunctionDefinition) entry.getValue();
+                    System.out.println("    Function term: " + funcDef.getTerm());
+                }
+            }
+
+            // Get the main function term
+            Term mainTerm = parsed.mainFunction.getTerm();
+            System.out.println("Parsed term: " + mainTerm);
+
+            // Evaluate the original term to normal form
+            Map<String, Term> env = new HashMap<>();
+
+            // ADD FLIP DEFINITION TO ENVIRONMENT
+            Term flipDefinition = new Abstraction("f",
+                new Abstraction("x",
+                    new Abstraction("y",
+                        new Application(
+                            new Application(new Variable("f"), new Variable("y")),
+                            new Variable("x")
+                        )
+                    )
+                )
+            );
+            env.put("flip", flipDefinition);
+
+            // Populate environment with function definitions from symbolMap
+            for (Map.Entry<String, DefinedValue> entry : symbolMap.entrySet()) {
+                if (entry.getValue() instanceof FunctionDefinition) {
+                    FunctionDefinition funcDef = (FunctionDefinition) entry.getValue();
+                    env.put(entry.getKey(), funcDef.getTerm());
+                }
+            }
+
+            System.out.println("Environment contains: " + env.keySet());
+
+            Term evaluatedTerm = mainTerm.eval(env);
+
+            // Keep evaluating term until normal form
+            Term previousTerm;
+            int termSteps = 0;
+            int maxSteps = 1000;
+
+            do {
+                previousTerm = evaluatedTerm;
+                evaluatedTerm = evaluatedTerm.eval(env);
+                termSteps++;
+
+                if (termSteps >= maxSteps) {
+                   // System.out.println("Warning: Term evaluation reached maximum steps");
+                    break;
+                }
+            } while (!evaluatedTerm.equals(previousTerm));
+
+            System.out.println("Term evaluation result (normal form): " + evaluatedTerm);
+          //  System.out.println("Term steps to normal form: " + termSteps);
+
+            // For combinator translation, we need to handle the environment differently
+            // Since combinators don't have variables, we need to inline the function definitions
+            Term mainTermForCombinator = mainTerm;
+
+            // Inline all function definitions by substituting them into the main term
+            for (Map.Entry<String, DefinedValue> entry : symbolMap.entrySet()) {
+                if (entry.getValue() instanceof FunctionDefinition) {
+                    FunctionDefinition funcDef = (FunctionDefinition) entry.getValue();
+                    mainTermForCombinator = mainTermForCombinator.substitute(entry.getKey(), funcDef.getTerm());
+                }
+            }
+
+            System.out.println("Main term after inlining: " + mainTermForCombinator);
+
+            // Direct chain: toIntermediateTerm -> methodT -> toCombinatorTerm
+            Combinator combinator = mainTermForCombinator.toIntermediateTerm().methodT(true).toCombinatorTerm();
+            System.out.println("Combinator term: " + combinator);
+
+            // Evaluate combinator to normal form
+            Map<String, Combinator> combinatorEnv = new HashMap<>();
+            Combinator evaluatedCombinator = combinator.eval(combinatorEnv);
+
+            // Keep evaluating combinator until normal form
+            Combinator previousCombinator;
+            int combinatorSteps = 0;
+
+            do {
+                previousCombinator = evaluatedCombinator;
+                evaluatedCombinator = evaluatedCombinator.eval(combinatorEnv);
+                combinatorSteps++;
+
+                if (combinatorSteps >= maxSteps) {
+                   // System.out.println("Warning: Combinator evaluation reached maximum steps");
+                    break;
+                }
+            } while (!evaluatedCombinator.equals(previousCombinator));
+
+            System.out.println("Combinator evaluation result (normal form): " + evaluatedCombinator);
+            //System.out.println("Combinator steps to normal form: " + combinatorSteps);
+
+
+            System.out.println();
+
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+            e.printStackTrace();
+            System.out.println();
         }
     }
-
 }
