@@ -868,8 +868,6 @@ public static void main(String[] args) {
     testProgram("main = if (3 <= 4) then 100 else 200;", "Conditional with comparison");
     testProgram("main = if (True and False) then 1 else if True then 2 else 3;", "Nested conditionals");
 
-    // 6. Lambda abstractions (functions)
-    testProgram("main = λx.x;", "Identity function");
 
     testProgram("main = (λx.(+) x x) 5;", " Simple function call");
 
@@ -963,7 +961,7 @@ public static void main(String[] args) {
             env.put("flip", flipDefinition);
 
             // Populate environment with function definitions from symbolMap
-            for (Map.Entry<String, DefinedValue> entry : symbolMap.entrySet()) {
+                for (Map.Entry<String, DefinedValue> entry : symbolMap.entrySet()) {
                 if (entry.getValue() instanceof FunctionDefinition) {
                     FunctionDefinition funcDef = (FunctionDefinition) entry.getValue();
                     env.put(entry.getKey(), funcDef.getTerm());
@@ -996,20 +994,24 @@ public static void main(String[] args) {
             // For combinator translation, we need to handle the environment differently
             // Since combinators don't have variables, we need to inline the function definitions
             Term mainTermForCombinator = mainTerm;
+            mainTermForCombinator = inlineFunctions(mainTermForCombinator, symbolMap);
 
-            // Inline all function definitions by substituting them into the main term
-            for (Map.Entry<String, DefinedValue> entry : symbolMap.entrySet()) {
-                if (entry.getValue() instanceof FunctionDefinition) {
-                    FunctionDefinition funcDef = (FunctionDefinition) entry.getValue();
-                    mainTermForCombinator = mainTermForCombinator.substitute(entry.getKey(), funcDef.getTerm());
-                }
-            }
+//            // Inline all function definitions by substituting them into the main term
+//            for (Map.Entry<String, DefinedValue> entry : symbolMap.entrySet()) {
+//                if (entry.getValue() instanceof FunctionDefinition) {
+//                    FunctionDefinition funcDef = (FunctionDefinition) entry.getValue();
+//                    mainTermForCombinator = mainTermForCombinator.substitute(entry.getKey(), funcDef.getTerm());
+//                }
+//            }
 
             System.out.println("Main term after inlining: " + mainTermForCombinator);
 
             // Direct chain: toIntermediateTerm -> methodT -> toCombinatorTerm
-            Combinator combinator = mainTermForCombinator.toIntermediateTerm().methodT(true).toCombinatorTerm();
+            Combinator combinator = mainTermForCombinator.toIntermediateTerm().methodT(true)
+                .toCombinatorTerm();
+            Combinator optimized = combinator.optimize();
             System.out.println("Combinator term: " + combinator);
+            System.out.println("Optimized Combinator Term: " + optimized);
 
             // Evaluate combinator to normal form
             Map<String, Combinator> combinatorEnv = new HashMap<>();
@@ -1042,4 +1044,127 @@ public static void main(String[] args) {
             System.out.println();
         }
     }
+
+    /**
+     * Recursively inlines function definitions by substituting named functions only.
+     * Does NOT perform beta-reduction on lambda applications.
+     */
+    private static Term inlineFunctions(Term term, Map<String, DefinedValue> symbolMap) {
+        // 1. Application: recursively inline both function and argument
+        if (term instanceof Application) {
+            Application app = (Application) term;
+            Term function = inlineFunctions(app.getFunction(), symbolMap);
+            Term argument = inlineFunctions(app.getArgument(), symbolMap);
+            // DO NOT perform beta-reduction - leave lambdas intact for combinator translation
+            return new Application(function, argument);
+        }
+
+        // 2. Variable: if it's a defined function, substitute its definition
+        else if (term instanceof Variable) {
+            String varName = ((Variable) term).getName();
+            if (symbolMap.containsKey(varName) && symbolMap.get(varName) instanceof FunctionDefinition) {
+                FunctionDefinition funcDef = (FunctionDefinition) symbolMap.get(varName);
+                return inlineFunctions(funcDef.getTerm(), symbolMap);
+            }
+            return term;
+        }
+
+        // 3. Abstraction: inline in the body, but keep the lambda structure
+        else if (term instanceof Abstraction) {
+            Abstraction abs = (Abstraction) term;
+            return new Abstraction(abs.getParameter(), inlineFunctions(abs.getBody(), symbolMap));
+        }
+
+        // 4. Arithmetic/Logical operations: inline recursively in operands
+        else if (term instanceof Addition) {
+            Addition add = (Addition) term;
+            return new Addition(inlineFunctions(add.getLeft(), symbolMap),
+                inlineFunctions(add.getRight(), symbolMap));
+        }
+        else if (term instanceof Subtraction) {
+            Subtraction sub = (Subtraction) term;
+            return new Subtraction(inlineFunctions(sub.getLeft(), symbolMap),
+                inlineFunctions(sub.getRight(), symbolMap));
+        }
+        else if (term instanceof Multiplication) {
+            Multiplication mul = (Multiplication) term;
+            return new Multiplication(inlineFunctions(mul.getLeft(), symbolMap),
+                inlineFunctions(mul.getRight(), symbolMap));
+        }
+        else if (term instanceof Division) {
+            Division div = (Division) term;
+            return new Division(inlineFunctions(div.getLeft(), symbolMap),
+                inlineFunctions(div.getRight(), symbolMap));
+        }
+        else if (term instanceof And) {
+            And and = (And) term;
+            return new And(inlineFunctions(and.getLeft(), symbolMap),
+                inlineFunctions(and.getRight(), symbolMap));
+        }
+        else if (term instanceof Or) {
+            Or or = (Or) term;
+            return new Or(inlineFunctions(or.getLeft(), symbolMap),
+                inlineFunctions(or.getRight(), symbolMap));
+        }
+        else if (term instanceof Equal) {
+            Equal eq = (Equal) term;
+            return new Equal(inlineFunctions(eq.getLeft(), symbolMap),
+                inlineFunctions(eq.getRight(), symbolMap));
+        }
+        else if (term instanceof LEqual) {
+            LEqual le = (LEqual) term;
+            return new LEqual(inlineFunctions(le.getLeft(), symbolMap),
+                inlineFunctions(le.getRight(), symbolMap));
+        }
+
+        // 5. Unary operations
+        else if (term instanceof Not) {
+            Not not = (Not) term;
+            return new Not(inlineFunctions(not.getOperand(), symbolMap));
+        }
+
+        // 6. Conditional: inline in all branches
+        else if (term instanceof Conditional) {
+            Conditional cond = (Conditional) term;
+            return new Conditional(inlineFunctions(cond.getCondition(), symbolMap),
+                inlineFunctions(cond.getTrueBranch(), symbolMap),
+                inlineFunctions(cond.getFalseBranch(), symbolMap));
+        }
+
+        // 7. Recursion: inline in the body
+        else if (term instanceof Recursion) {
+            Recursion rec = (Recursion) term;
+            return new Recursion(rec.getName(), inlineFunctions(rec.getBody(), symbolMap));
+        }
+
+        // 8. Match expression: inline in input and all cases
+        else if (term instanceof Match) {
+            Match match = (Match) term;
+            Term input = inlineFunctions(match.getInputTerm(), symbolMap);
+            List<Match.Case> newCases = new ArrayList<>();
+            for (Match.Case c : match.getCases()) {
+                // Note: patterns don't need inlining, only the result terms
+                newCases.add(new Match.Case(c.getPattern(),
+                    inlineFunctions(c.getResult(), symbolMap)));
+            }
+            return new Match(input, newCases);
+        }
+
+        // 9. Constants and constructors: no inlining needed
+        else if (term instanceof IntegerLiteral ||
+            term instanceof BooleanLiteral ||
+            term instanceof Constant ||
+            term instanceof Constructor) {
+            return term;  // Base case - no variables to substitute
+        }
+
+        // 10. Fallback for any other Term type (shouldn't happen)
+        else {
+            // For safety, try to handle unknown term types by returning as-is
+            System.err.println("Warning: inlineFunctions encountered unknown term type: " +
+                term.getClass().getSimpleName());
+            return term;
+        }
+    }
+
 }

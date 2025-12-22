@@ -375,6 +375,15 @@ public class CombinatorApplication extends Combinator {
                     }
                 }
             }
+            // NEW: Handle W combinator: ((W x) y) -> x y y
+            if (funcFunc instanceof WCombinator) {
+                // We have (W x) y -> x y y
+                Combinator x = funcArg;
+                Combinator y = evaluatedArgument;
+
+                Combinator xy = new CombinatorApplication(x, y);
+                return new CombinatorApplication(xy, y).eval(env);
+            }
         }
 
         // Case 3: The function is Y (Y f)
@@ -432,6 +441,13 @@ public class CombinatorApplication extends Combinator {
             }
         }
 
+        // NEW: Handle standalone W combinator: W x -> wait for second argument
+        if (evaluatedFunction instanceof WCombinator) {
+            // W x -> wait for second argument y to become (W x) y
+            return new CombinatorApplication(evaluatedFunction, evaluatedArgument);
+        }
+
+
         // Default: no reduction happened, return the application with evaluated sub-terms
         return new CombinatorApplication(evaluatedFunction, evaluatedArgument);
     }
@@ -464,5 +480,83 @@ public class CombinatorApplication extends Combinator {
     @Override
     public Combinator substitute(String varName, Combinator value) {
         return new CombinatorApplication(function.substitute(varName, value), argument.substitute(varName, value));
+    }
+
+    @Override
+    public Combinator optimize() {
+        // First, optimize the subterms recursively
+        Combinator optimizedFunction = function.optimize();
+        Combinator optimizedArgument = argument.optimize();
+
+        // Try to apply optimization rules to the optimized subterms
+        Combinator result = applyOptimizationRules(optimizedFunction, optimizedArgument);
+
+        // If a rule applied, recursively optimize the result
+        if (result != null) {
+            return result.optimize(); // Recursively optimize the transformed result
+        }
+
+        // If no rule applied, return the application of the optimized subterms
+        return new CombinatorApplication(optimizedFunction, optimizedArgument);
+    }
+
+    private Combinator applyOptimizationRules(Combinator func, Combinator arg) {
+        // Rule 1: B I = I
+        if (func instanceof BCombinator && arg instanceof ICombinator) {
+            return new ICombinator();
+        }
+
+        // Rule 2: C I = C (or C*)
+        if (func instanceof CCombinator && arg instanceof ICombinator) {
+            return func; // C I = C
+        }
+
+        // Rule 3: S x I = W x
+        if (func instanceof CombinatorApplication) {
+            CombinatorApplication app = (CombinatorApplication) func;
+            if (app.getFunction() instanceof SCombinator && arg instanceof ICombinator) {
+                return new CombinatorApplication(new WCombinator(), app.getArgument());
+            }
+        }
+
+        // Rule 4: S K x = I
+        if (func instanceof CombinatorApplication) {
+            CombinatorApplication app = (CombinatorApplication) func;
+            if (app.getFunction() instanceof SCombinator && app.getArgument() instanceof KCombinator) {
+                return new ICombinator();
+            }
+        }
+
+        // Rule 5: B x I = x
+        if (func instanceof CombinatorApplication) {
+            CombinatorApplication app = (CombinatorApplication) func;
+            if (app.getFunction() instanceof BCombinator && arg instanceof ICombinator) {
+                return app.getArgument();
+            }
+        }
+
+        // Rule 6: C K x = I
+        if (func instanceof CombinatorApplication) {
+            CombinatorApplication app = (CombinatorApplication) func;
+            if (app.getFunction() instanceof CCombinator && app.getArgument() instanceof KCombinator) {
+                return new ICombinator();
+            }
+        }
+
+        // Rule 7: C B I = I
+        if (func instanceof CombinatorApplication) {
+            CombinatorApplication app = (CombinatorApplication) func;
+            if (app.getFunction() instanceof CCombinator) {
+                if (app.getArgument() instanceof CombinatorApplication) {
+                    CombinatorApplication innerApp = (CombinatorApplication) app.getArgument();
+                    if (innerApp.getFunction() instanceof BCombinator &&
+                        innerApp.getArgument() instanceof ICombinator) {
+                        return new ICombinator();
+                    }
+                }
+            }
+        }
+
+        return null; // No rule applied
     }
 }

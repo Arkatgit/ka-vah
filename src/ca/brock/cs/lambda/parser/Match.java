@@ -57,6 +57,14 @@ public class Match extends Term {
         this.cases = cases;
     }
 
+    public Term getInputTerm() {
+        return inputTerm;
+    }
+
+    public List<Case> getCases() {
+        return cases;
+    }
+
     @Override
     public String toStringPrec(int prec) {
         StringBuilder sb = new StringBuilder();
