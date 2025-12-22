@@ -12,7 +12,7 @@ import java.util.Map;
 public class FunctionDefinition implements DefinedValue {
     private final String name;
     private Type type;
-    private Term term; // This field is no longer final
+    private Term term;
 
     public FunctionDefinition(String name, Type type, Term term) {
         this.name = name;
@@ -76,7 +76,13 @@ public class FunctionDefinition implements DefinedValue {
     }
 
     @Override
+//    public String toString() {
+//        return name + " : " + type.toString() + " = " + (term == null ? "" : term.toString());
+//    }
+
     public String toString() {
-        return name + " : " + type.toString() + " = " + (term == null ? "" : term.toString());
+        // FIX: Handle null term gracefully
+        String termString = (term == null) ? "<null>" : term.toString();
+        return name + " : " + (type == null ? "<null>" : type.toString()) + " = " + termString;
     }
 }

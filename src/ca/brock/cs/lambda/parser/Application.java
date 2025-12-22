@@ -140,6 +140,39 @@ public class Application extends Term {
             return abstraction.getBody().substitute(abstraction.getParameter(), evaluatedArgument).eval(env);
         }
 
+        // Check if it's flip being applied
+        if (evaluatedFunction instanceof Application) {
+            Application innerApp = (Application) evaluatedFunction;
+            Term innerFunc = innerApp.getFunction();
+            Term innerArg = innerApp.getArgument();
+
+           // System.out.println("DEBUG: Inner application: " + innerFunc + " " + innerArg);
+
+            // Check if this is (flip op) arg1
+            if (innerFunc instanceof Constant && ((Constant) innerFunc).getValue().equals("flip")) {
+                System.out.println("DEBUG: Found flip application");
+                // We have (flip op) arg1 - wait for second argument
+                return new Application(evaluatedFunction, evaluatedArgument);
+            }
+
+            // Check if this is ((flip op) arg1) arg2
+            if (innerFunc instanceof Application) {
+                Application flipApp = (Application) innerFunc;
+                Term flipFunc = flipApp.getFunction();
+                Term op = flipApp.getArgument();
+
+                if (flipFunc instanceof Constant && ((Constant) flipFunc).getValue().equals("flip")) {
+                    System.out.println("DEBUG: Reducing flip: ((flip " + op + ") " + innerArg + ") " + evaluatedArgument);
+                    // We have ((flip op) arg1) arg2
+                    // Reduce to: op arg2 arg1
+                    return new Application(
+                        new Application(op, evaluatedArgument),
+                        innerArg
+                    ).eval(env);
+                }
+            }
+        }
+
         // Return a partially applied constructor
         if (evaluatedFunction instanceof Constructor) {
             return new Application(evaluatedFunction, evaluatedArgument);

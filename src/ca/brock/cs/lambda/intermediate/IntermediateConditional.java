@@ -2,6 +2,8 @@ package ca.brock.cs.lambda.intermediate;
 
 import ca.brock.cs.lambda.combinators.Combinator;
 import ca.brock.cs.lambda.combinators.CombinatorApplication;
+import ca.brock.cs.lambda.combinators.CombinatorConstant;
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -76,19 +78,35 @@ public class IntermediateConditional extends IntermediateTerm {
         );
     }
 
-    /**
-     * Converts this IntermediateConditional to a CombinatorApplication representing the conditional logic.
-     * T[if C then T else F] = ((T[C] T[T]) T[F]) (assuming Church Boolean style)
-     * @return The equivalent Combinator term.
-     */
+//    /**
+//     * Converts this IntermediateConditional to a CombinatorApplication representing the conditional logic.
+//     * T[if C then T else F] = ((T[C] T[T]) T[F]) (assuming Church Boolean style)
+//     * @return The equivalent Combinator term.
+//     */
+//    @Override
+//    public Combinator toCombinatorTerm() {
+//        Combinator translatedCondition = condition.toCombinatorTerm();
+//        Combinator translatedTrueBranch = trueBranch.toCombinatorTerm();
+//        Combinator translatedFalseBranch = falseBranch.toCombinatorTerm();
+//        return new CombinatorApplication(
+//            new CombinatorApplication(translatedCondition, translatedTrueBranch),
+//            translatedFalseBranch
+//        );
+//    }
     @Override
     public Combinator toCombinatorTerm() {
+        // Use IF combinator instead of Church encoding
         Combinator translatedCondition = condition.toCombinatorTerm();
         Combinator translatedTrueBranch = trueBranch.toCombinatorTerm();
         Combinator translatedFalseBranch = falseBranch.toCombinatorTerm();
+
         return new CombinatorApplication(
-            new CombinatorApplication(translatedCondition, translatedTrueBranch),
+            new CombinatorApplication(
+                new CombinatorApplication(new CombinatorConstant("IF"), translatedCondition),
+                translatedTrueBranch
+            ),
             translatedFalseBranch
         );
     }
+
 }

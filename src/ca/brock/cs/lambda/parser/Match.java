@@ -2,7 +2,12 @@ package ca.brock.cs.lambda.parser;
 
 import ca.brock.cs.lambda.combinators.Combinator;
 import ca.brock.cs.lambda.combinators.CombinatorApplication;
+import ca.brock.cs.lambda.intermediate.IntermediateConstantPattern;
+import ca.brock.cs.lambda.intermediate.IntermediateConstructorPattern;
+import ca.brock.cs.lambda.intermediate.IntermediateMatch;
+import ca.brock.cs.lambda.intermediate.IntermediatePattern;
 import ca.brock.cs.lambda.intermediate.IntermediateTerm;
+import ca.brock.cs.lambda.intermediate.IntermediateVariablePattern;
 import ca.brock.cs.lambda.logging.AppLogger;
 import ca.brock.cs.lambda.types.AlgebraicDataType;
 import ca.brock.cs.lambda.types.DefinedValue;
@@ -237,6 +242,23 @@ public class Match extends Term {
         // If no match is found, it's a runtime error
         throw new RuntimeException("Match expression failed to find a matching pattern for " + evaluatedInput.toString());
     }
+//    @Override
+//    public Term eval(Map<String, Term> env) {
+//        Term evaluatedInput = inputTerm.eval(env);
+//
+//        for (Case c : cases) {
+//            Map<String, Term> bindings = c.getPattern().match(evaluatedInput);
+//            if (bindings != null) {
+//                Term resultTerm = c.getResult();
+//                for (Map.Entry<String, Term> entry : bindings.entrySet()) {
+//                    resultTerm = resultTerm.substitute(entry.getKey(), entry.getValue());
+//                }
+//                return resultTerm.eval(env);
+//            }
+//        }
+//        throw new RuntimeException("No matching pattern found for: " + evaluatedInput);
+//    }
+
 
     @Override
     public Term substitute(String varName, Term value) {
@@ -273,6 +295,46 @@ public class Match extends Term {
      */
     @Override
     public IntermediateTerm toIntermediateTerm() {
-        return null;
+        // Convert each case to intermediate form
+        List<IntermediateMatch.Case> intermediateCases = new ArrayList<>();
+        for (Case c : cases) {
+            IntermediatePattern patternTerm = convertPatternToIntermediate(c.getPattern());
+            IntermediateTerm resultTerm = c.getResult().toIntermediateTerm();
+            intermediateCases.add(new IntermediateMatch.Case(patternTerm, resultTerm));
+        }
+
+        return new IntermediateMatch(inputTerm.toIntermediateTerm(), intermediateCases);
+    }
+
+    private IntermediatePattern convertPatternToIntermediate(Pattern pattern) {
+        if (pattern instanceof VariablePattern) {
+            VariablePattern vp = (VariablePattern) pattern;
+            return new IntermediateVariablePattern(vp.getName());
+        } else if (pattern instanceof ConstructorPattern) {
+            ConstructorPattern cp = (ConstructorPattern) pattern;
+            List<Pattern> subPatterns = cp.getPatterns();
+
+            // Convert sub-patterns
+            List<IntermediatePattern> intermediateSubPatterns = new ArrayList<>();
+            for (Pattern subPattern : subPatterns) {
+                intermediateSubPatterns.add(convertPatternToIntermediate(subPattern));
+            }
+
+            return new IntermediateConstructorPattern(cp.getName(), intermediateSubPatterns);
+        } else if (pattern instanceof ConstantPattern) {
+            ConstantPattern constPattern = (ConstantPattern) pattern;
+            Term constant = constPattern.getConstant();
+            if (constant instanceof IntegerLiteral) {
+                return new IntermediateConstantPattern(((IntegerLiteral) constant).getValue());
+            } else if (constant instanceof BooleanLiteral) {
+                return new IntermediateConstantPattern(((BooleanLiteral) constant).getValue());
+            } else if (constant instanceof Constant) {
+                return new IntermediateConstantPattern(((Constant) constant).getValue());
+            } else {
+                return new IntermediateConstantPattern(constant.toString());
+            }
+        } else {
+            throw new IllegalArgumentException("Unknown pattern type: " + pattern.getClass().getSimpleName());
+        }
     }
 }
