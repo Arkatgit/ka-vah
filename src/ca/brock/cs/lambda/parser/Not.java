@@ -35,7 +35,7 @@ public class Not extends Term {
     }
 
     @Override
-    protected Type computeType(Map<String, Type> env, Unifier unifier) {
+    public Type computeType(Map<String, Type> env, Unifier unifier) {
         // Type check the operand, passing down the Unifier
         operand.type(env, unifier);
         Type operandType = operand.getType();

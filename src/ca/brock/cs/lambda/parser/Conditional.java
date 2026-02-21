@@ -46,7 +46,7 @@ public class Conditional extends Term {
             " else " +  falseBranch.toStringPrec(prec);
     }
     @Override
-    protected Type computeType(Map<String, Type> env, Unifier unifier) {
+    public Type computeType(Map<String, Type> env, Unifier unifier) {
         condition.type(env, unifier);
         trueBranch.type(env, unifier);
         falseBranch.type(env, unifier);

@@ -20,7 +20,7 @@ import java.util.Set;
 public class Or extends Term {
     private Term left;
     private Term right;
-    public static final int precedence = 5;
+    public static final int precedence = 2;
     public Or(Term l, Term r)
     {
         left = l;
@@ -33,14 +33,22 @@ public class Or extends Term {
     public Term getRight() {
         return right;
     }
+//    @Override
+//    public String toStringPrec(int prec)
+//    {
+//        return left.toStringPrec(prec) + " or " + right.toStringPrec(prec);
+//    }
     @Override
-    public String toStringPrec(int prec)
-    {
-        return left.toStringPrec(prec) + " or " + right.toStringPrec(prec);
+    public String toStringPrec(int prec) {
+        String result = left.toStringPrec(precedence) + " or " + right.toStringPrec(precedence + 1);
+        if (prec > precedence) {
+            return "(" + result + ")";
+        }
+        return result;
     }
 
     @Override
-    protected Type computeType(Map<String, Type> env, Unifier unifier) {
+    public Type computeType(Map<String, Type> env, Unifier unifier) {
         // Type check both operands
         left.type(env, unifier);
         right.type(env, unifier);

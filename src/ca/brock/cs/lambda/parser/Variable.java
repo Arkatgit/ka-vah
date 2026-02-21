@@ -33,7 +33,7 @@ public class Variable extends Term {
     }
 
     @Override
-    protected Type computeType(Map<String, Type> env, Unifier unifier) {
+    public Type computeType(Map<String, Type> env, Unifier unifier) {
         if (!env.containsKey(name)) {
             // For free variables, create a fresh type variable
            TVar fresh = TVar.fresh();

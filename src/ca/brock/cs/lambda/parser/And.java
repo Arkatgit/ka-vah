@@ -21,7 +21,7 @@ public class And extends Term {
     private Term left;
     private Term right;
 
-    public static final int precedence = 5;
+    public static final int precedence = 3;
     public And(Term l, Term r)
     {
         left = l;
@@ -34,14 +34,22 @@ public class And extends Term {
     public Term getRight() {
         return right;
     }
+//    @Override
+//    public String toStringPrec(int prec)
+//    {
+//        return left.toStringPrec(prec) + " and " + right.toStringPrec(prec);
+//    }
     @Override
-    public String toStringPrec(int prec)
-    {
-        return left.toStringPrec(prec) + " and " + right.toStringPrec(prec);
+    public String toStringPrec(int prec) {
+        String result = left.toStringPrec(precedence) + " and " + right.toStringPrec(precedence + 1);
+        if (prec > precedence) {
+            return "(" + result + ")";
+        }
+        return result;
     }
 
     @Override
-    protected Type computeType(Map<String, Type> env, Unifier unifier) {
+    public Type computeType(Map<String, Type> env, Unifier unifier) {
         left.type(env, unifier);
         right.type(env, unifier);
 

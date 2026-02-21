@@ -378,20 +378,21 @@ public class ProgParser {
             matchParser
         );
 
-        // Parse function application (highest precedence)
-        Parser<Term> application = simpleTerm.many1().map(terms -> {
-            if (terms.isEmpty()) {
-                return null;
-            }
-            Term result = terms.get(0);
-            for (int i = 1; i < terms.size(); i++) {
-                result = new Application(result, terms.get(i));
-            }
-            return result;
-        });
+//        // Parse function application (highest precedence)
+//        Parser<Term> application = simpleTerm.many1().map(terms -> {
+//            if (terms.isEmpty()) {
+//                return null;
+//            }
+//            Term result = terms.get(0);
+//            for (int i = 1; i < terms.size(); i++) {
+//                result = new Application(result, terms.get(i));
+//            }
+//            return result;
+//        });
 
         // Parse operators (lower precedence than application)
         Parser<Term> parser = new OperatorTable<Term>()
+            .infixl(Parsers.constant((Term l, Term r) -> new Application(l, r)), 30) // Highest precedence
             .infixr(progOperators.token("or").retn(Or::new), Or.precedence)
             .infixr(progOperators.token("and").retn(And::new), And.precedence)
             .prefix(progOperators.token("not").retn(Not::new), Not.precedence)
@@ -401,7 +402,7 @@ public class ProgParser {
             .infixn(progOperators.token("-").retn(Subtraction::new), Subtraction.precedence)
             .infixr(progOperators.token("*").retn(Multiplication::new), Multiplication.precedence)
             .infixr(progOperators.token("/").retn(Division::new), Division.precedence)
-            .build(application);
+            .build(simpleTerm);
 
         termRef.set(parser);
         return parser;

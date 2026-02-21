@@ -46,7 +46,7 @@ public class Abstraction extends Term {
     }
 
     @Override
-    protected Type computeType(Map<String, Type> env, Unifier unifier) {
+    public Type computeType(Map<String, Type> env, Unifier unifier) {
         Map<String, Type> newEnv = new HashMap<>(env);
         TVar paramType = TVar.fresh();
         newEnv.put(parameter, paramType); // Add parameter to environment with a fresh type variable

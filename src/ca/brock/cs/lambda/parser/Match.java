@@ -92,7 +92,7 @@ public class Match extends Term {
     }
 
     @Override
-    protected Type computeType(Map<String, Type> env, Unifier unifier) {
+    public Type computeType(Map<String, Type> env, Unifier unifier) {
         if (cases.isEmpty()) {
             throw new TypeError("Match expression must have at least one case.");
         }

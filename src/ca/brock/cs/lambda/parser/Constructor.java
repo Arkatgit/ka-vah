@@ -110,7 +110,7 @@ public class Constructor extends Term implements DefinedValue {
 //    }
 
     @Override
-    protected Type computeType(Map<String, Type> env, Unifier unifier) {
+    public Type computeType(Map<String, Type> env, Unifier unifier) {
         Type constructorType = env.get(name);
         if (constructorType == null) {
             throw new TypeError("Constructor '" + name + "' not found.");
