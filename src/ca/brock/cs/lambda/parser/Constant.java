@@ -48,7 +48,7 @@ public class Constant extends Term {
     }
 
     @Override
-    protected Type computeType(Map<String, Type> env, Unifier unifier) {
+    public Type computeType(Map<String, Type> env, Unifier unifier) {
         if (value.equals("True") || value.equals("False")) {
             return new ca.brock.cs.lambda.types.Constant("Bool");
         }

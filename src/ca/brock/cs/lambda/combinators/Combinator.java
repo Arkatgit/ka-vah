@@ -36,4 +36,12 @@ public abstract class Combinator {
      */
     public abstract Combinator substitute(String varName, Combinator value); // Will implement this later
 
+    /**
+     * Applies optimization rules to simplify the combinator expression.
+     * @return An optimized version of this combinator term.
+     */
+    public Combinator optimize() {
+        return this;
+    }
+
 }

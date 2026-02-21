@@ -39,7 +39,7 @@
             return name + ". " + body.toStringPrec(prec);
         }
         @Override
-        protected Type computeType(Map<String, Type> env, Unifier unifier) {
+        public Type computeType(Map<String, Type> env, Unifier unifier) {
             Map<String, Type> newEnv = new HashMap<>(env);
             TVar recType = TVar.fresh();
            // TVar recType = unifier.fresh();

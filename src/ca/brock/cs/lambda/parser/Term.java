@@ -40,7 +40,7 @@ public abstract class Term {
     }
 
     // Internal type computation (implemented by subclasses)
-    protected abstract Type computeType(Map<String, Type> env, Unifier unifier);
+    public abstract Type computeType(Map<String, Type> env, Unifier unifier);
 
     public abstract Term eval(Map<String, Term> env);
     public abstract Term substitute(String varName, Term value);

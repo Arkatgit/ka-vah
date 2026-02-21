@@ -57,6 +57,14 @@ public class Match extends Term {
         this.cases = cases;
     }
 
+    public Term getInputTerm() {
+        return inputTerm;
+    }
+
+    public List<Case> getCases() {
+        return cases;
+    }
+
     @Override
     public String toStringPrec(int prec) {
         StringBuilder sb = new StringBuilder();
@@ -84,7 +92,7 @@ public class Match extends Term {
     }
 
     @Override
-    protected Type computeType(Map<String, Type> env, Unifier unifier) {
+    public Type computeType(Map<String, Type> env, Unifier unifier) {
         if (cases.isEmpty()) {
             throw new TypeError("Match expression must have at least one case.");
         }

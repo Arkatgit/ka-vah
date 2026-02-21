@@ -35,14 +35,24 @@ public class Addition extends Term {
         right = r;
     }
 
-    @Override
-    public String toStringPrec(int prec)
-    {
-        return left.toStringPrec(prec) + " + " + right.toStringPrec(prec);
+//    @Override
+//    public String toStringPrec(int prec)
+//    {
+//        return left.toStringPrec(prec) + " + " + right.toStringPrec(prec);
+//    }
+    public String toStringPrec(int prec) {
+        String result = left.toStringPrec(10) + " + " + right.toStringPrec(11);
+        if (prec > 10) {
+            return "(" + result + ")";
+        }
+        return result;
     }
 
+
+
+
     @Override
-    protected Type computeType(Map<String, Type> env, Unifier unifier) {
+    public Type computeType(Map<String, Type> env, Unifier unifier) {
         left.type(env, unifier);
         right.type(env, unifier);
 

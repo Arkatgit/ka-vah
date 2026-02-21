@@ -37,75 +37,148 @@ public class Application extends Term {
         return argument;
     }
 
-    public String toStringPrec(int prec) {
-        // Case 1: Handle (* t) -> Application(Application(Constant("flip"), Constant("*")), r)
-        if (function instanceof Application) {
-            Application innerApp = (Application) function;
+//    public String toStringPrec(int prec) {
+//        // Case 1: Handle (* t) -> Application(Application(Constant("flip"), Constant("*")), r)
+//        if (function instanceof Application) {
+//            Application innerApp = (Application) function;
+//
+//            if (innerApp.function instanceof Constant) {
+//                Constant firstConst = (Constant) innerApp.function;
+//
+//                // Check if it's "flip op" where op is an infix operator
+//                if ("flip".equals(firstConst.toStringPrec(0))) {
+//                    if (innerApp.argument instanceof Constant) {
+//                        Constant opConst = (Constant) innerApp.argument;
+//
+//                        if (opConst.canBeUsedAsSection()) {
+//                            // Format as (* t)
+//                            return "(" + opConst.toStringPrec(0) + " " + argument.toStringPrec(precedence + 1) + ")";
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//
+//        // Case 2: Handle (t *) -> Application(Constant("*"), l)
+//        if (function instanceof Constant) {
+//            Constant opConst = (Constant) function;
+//
+//            if (opConst.isInfixOperator()) {
+//                // Format as (t *)
+//                return "(" + argument.toStringPrec(precedence) + " " + opConst.toStringPrec(0) + ")";
+//            }
+//        }
+//
+//        // Case 3: Handle (*) t1 t2 -> Application(Application(Constant("*"), l), r)
+//        if (function instanceof Application) {
+//            Application innerApp = (Application) function;
+//
+//            if (innerApp.function instanceof Constant) {
+//                Constant opConst = (Constant) innerApp.function;
+//
+//                if (opConst.isInfixOperator()) {
+//                    // Format as t1 * t2 (infix notation)
+//                    return innerApp.argument.toStringPrec(precedence) + " " + opConst.toStringPrec(0) + " " + argument.toStringPrec(precedence + 1);
+//                }
+//            }
+//        }
+//
+//        // Case 4: Handle standalone (*) -> Constant("*")
+//        if (function instanceof Constant) {
+//            Constant opConst = (Constant) function;
+//
+//            if (opConst.isInfixOperator()) {
+//                // Format as (*)
+//                return "(" + opConst.toStringPrec(0) + ")";
+//            }
+//        }
+//
+//        // Default function application behavior
+//        String result = function.toStringPrec(precedence) + " " + argument.toStringPrec(precedence + 1);
+//
+//        // Ensure parentheses if precedence requires it
+//        if (prec > precedence) {
+//            result = "(" + result + ")";
+//        }
+//
+//        return result;
+//    }
+@Override
+public String toStringPrec(int prec) {
+    // Precedence for standard function application (f x) is 30.
+    int appPrecedence = 30;
+    String result;
 
-            if (innerApp.function instanceof Constant) {
-                Constant firstConst = (Constant) innerApp.function;
-
-                // Check if it's "flip op" where op is an infix operator
-                if ("flip".equals(firstConst.toStringPrec(0))) {
-                    if (innerApp.argument instanceof Constant) {
-                        Constant opConst = (Constant) innerApp.argument;
-
-                        if (opConst.canBeUsedAsSection()) {
-                            // Format as (* t)
-                            return "(" + opConst.toStringPrec(0) + " " + argument.toStringPrec(precedence + 1) + ")";
-                        }
-                    }
-                }
-            }
-        }
-
-        // Case 2: Handle (t *) -> Application(Constant("*"), l)
-        if (function instanceof Constant) {
-            Constant opConst = (Constant) function;
-
+    // CASE 1: Handle Infix notation: t1 op t2
+    // Structure: Application(Application(Constant(op), t1), t2)
+    if (function instanceof Application) {
+        Application innerApp = (Application) function;
+        if (innerApp.function instanceof Constant) {
+            Constant opConst = (Constant) innerApp.function;
             if (opConst.isInfixOperator()) {
-                // Format as (t *)
-                return "(" + argument.toStringPrec(precedence) + " " + opConst.toStringPrec(0) + ")";
+                int opPrec = getOperatorPrecedence(opConst.getValue());
+                // Use opPrec for left, opPrec + 1 for right (left-associativity)
+                result = innerApp.argument.toStringPrec(opPrec) + " " +
+                    opConst.toStringPrec(0) + " " +
+                    argument.toStringPrec(opPrec + 1);
+
+                // CRITICAL: If the surrounding context (prec) is higher than
+                // this operator's precedence, we MUST wrap in parentheses.
+                return (prec > opPrec) ? "(" + result + ")" : result;
             }
         }
+    }
 
-        // Case 3: Handle (*) t1 t2 -> Application(Application(Constant("*"), l), r)
-        if (function instanceof Application) {
-            Application innerApp = (Application) function;
+    // CASE 2: Handle Prefix "not"
+    if (function instanceof Constant && "not".equals(((Constant) function).getValue())) {
+        int opPrec = getOperatorPrecedence("not");
+        result = "not " + argument.toStringPrec(opPrec + 1);
 
-            if (innerApp.function instanceof Constant) {
-                Constant opConst = (Constant) innerApp.function;
+        // CRITICAL: Check against outer precedence
+        return (prec > opPrec) ? "(" + result + ")" : result;
+    }
 
-                if (opConst.isInfixOperator()) {
-                    // Format as t1 * t2 (infix notation)
-                    return innerApp.argument.toStringPrec(precedence) + " " + opConst.toStringPrec(0) + " " + argument.toStringPrec(precedence + 1);
-                }
+    // CASE 3: Handle Sections (Sections are usually self-parenthesizing)
+    // Left Section (t op) -> Structure: Application(Constant(op), t)
+    if (function instanceof Constant && ((Constant) function).isInfixOperator()) {
+        return "(" + argument.toStringPrec(0) + " " + ((Constant) function).toStringPrec(0) + ")";
+    }
+    // Right Section (op t) -> Structure: Application(Application(Constant("flip"), Constant(op)), t)
+    if (function instanceof Application) {
+        Application innerApp = (Application) function;
+        if (innerApp.function instanceof Constant && "flip".equals(((Constant) innerApp.function).getValue())) {
+            if (innerApp.argument instanceof Constant && ((Constant) innerApp.argument).isInfixOperator()) {
+                return "(" + ((Constant) innerApp.argument).toStringPrec(0) + " " + argument.toStringPrec(0) + ")";
             }
         }
+    }
 
-        // Case 4: Handle standalone (*) -> Constant("*")
-        if (function instanceof Constant) {
-            Constant opConst = (Constant) function;
+    // CASE 4: Standard Function Application (f x)
+    // We pass appPrecedence (30) to the function and appPrecedence + 1 (31) to the argument.
+    result = function.toStringPrec(appPrecedence) + " " + argument.toStringPrec(appPrecedence + 1);
 
-            if (opConst.isInfixOperator()) {
-                // Format as (*)
-                return "(" + opConst.toStringPrec(0) + ")";
-            }
+    // If this application is inside another application, wrap it.
+    if (prec > appPrecedence) {
+        result = "(" + result + ")";
+    }
+
+    return result;
+}
+
+    private int getOperatorPrecedence(String symbol) {
+        switch (symbol) {
+            case "not":         return 25;
+            case "*": case "/": return 20;
+            case "+": case "-": return 10;
+            case "=": case "<=": return 5;
+            case "and":         return 3;
+            case "or":          return 2;
+            default:            return 30; // Standard application precedence
         }
-
-        // Default function application behavior
-        String result = function.toStringPrec(precedence) + " " + argument.toStringPrec(precedence + 1);
-
-        // Ensure parentheses if precedence requires it
-        if (prec > precedence) {
-            result = "(" + result + ")";
-        }
-
-        return result;
     }
 
     @Override
-    protected Type computeType(Map<String, Type> env, Unifier unifier) {
+    public Type computeType(Map<String, Type> env, Unifier unifier) {
         Type functionType = function.computeType(env, unifier);
         Type argumentType = argument.computeType(env, unifier);
 

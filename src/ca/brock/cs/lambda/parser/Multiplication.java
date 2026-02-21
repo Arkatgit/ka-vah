@@ -37,14 +37,22 @@ public class Multiplication extends Term {
         return right;
     }
 
+//    @Override
+//    public String toStringPrec(int prec)
+//    {
+//        return left.toStringPrec(prec) + " * " + right.toStringPrec(prec);
+//    }
     @Override
-    public String toStringPrec(int prec)
-    {
-        return left.toStringPrec(prec) + " * " + right.toStringPrec(prec);
+    public String toStringPrec(int prec) {
+        String result = left.toStringPrec(20) + " * " + right.toStringPrec(21);
+        if (prec > 20) {
+            return "(" + result + ")";
+        }
+        return result;
     }
 
     @Override
-    protected Type computeType(Map<String, Type> env, Unifier unifier) {
+    public Type computeType(Map<String, Type> env, Unifier unifier) {
         left.type(env, unifier);
         right.type(env, unifier);
 

@@ -31,7 +31,7 @@ public class BooleanLiteral extends Term {
         }
 
     @Override
-    protected Type computeType(Map<String, Type> env, Unifier unifier) {
+    public Type computeType(Map<String, Type> env, Unifier unifier) {
         return new Constant("Bool");
     }
 

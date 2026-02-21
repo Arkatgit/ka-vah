@@ -21,7 +21,7 @@ public class Subtraction extends Term {
     private Term left;
     private Term right;
 
-    public static final int precedence = 20;
+    public static final int precedence = 10;
 
     public Subtraction(Term l, Term r)
     {
@@ -36,15 +36,28 @@ public class Subtraction extends Term {
         return right;
     }
 
+//    @Override
+//    public String toStringPrec(int prec)
+//    {
+//        return left.toStringPrec(prec) + " - " + right.toStringPrec(prec);
+//    }
     @Override
-    public String toStringPrec(int prec)
-    {
-        return left.toStringPrec(prec) + " - " + right.toStringPrec(prec);
+    public String toStringPrec(int prec) {
+        // Subtraction is left-associative.
+        // Left child uses 'precedence', right child uses 'precedence + 1'
+        // to handle cases like x - (y - z)
+        String result = left.toStringPrec(precedence) + " - " + right.toStringPrec(precedence + 1);
+
+        // If the parent context has a higher precedence than subtraction (e.g., multiplication),
+        // wrap this whole subtraction in parentheses.
+        if (prec > precedence) {
+            return "(" + result + ")";
+        }
+        return result;
     }
 
-
     @Override
-    protected Type computeType(Map<String, Type> env, Unifier unifier) {
+    public Type computeType(Map<String, Type> env, Unifier unifier) {
         left.type(env, unifier);
         right.type(env, unifier);
 

@@ -35,13 +35,22 @@ public class Division extends Term {
         return right;
     }
 
+//    @Override
+//    public String toStringPrec(int prec) {
+//        return left.toStringPrec(precedence) + " / " + right.toStringPrec(precedence + 1);
+//    }
     @Override
     public String toStringPrec(int prec) {
-        return left.toStringPrec(precedence) + " / " + right.toStringPrec(precedence + 1);
+        // Division is left-associative: left uses 'precedence', right uses 'precedence + 1'
+        String result = left.toStringPrec(precedence) + " / " + right.toStringPrec(precedence + 1);
+        if (prec > precedence) {
+            return "(" + result + ")";
+        }
+        return result;
     }
 
     @Override
-    protected Type computeType(Map<String, Type> env, Unifier unifier) {
+    public Type computeType(Map<String, Type> env, Unifier unifier) {
         left.type(env, unifier);
         right.type(env, unifier);
 
