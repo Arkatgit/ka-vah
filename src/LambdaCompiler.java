@@ -1,3 +1,5 @@
+import ca.brock.cs.lambda.abstractmachine.X86Emitter;
+import ca.brock.cs.lambda.abstractmachine.X86Program;
 import ca.brock.cs.lambda.combinators.*;
 import ca.brock.cs.lambda.parser.*;
 import ca.brock.cs.lambda.types.*;
@@ -325,7 +327,20 @@ public class LambdaCompiler {
         System.out.println("\n--- [DEBUG] Partially Evaluated Combinators ---");
         partiallyEvaluatedMap.forEach((k, v) -> System.out.println(k + " = " + v));
 
+// 8. Abstract Machine: X86 Emission
+        // Assuming "main" is the entry point, or fallback to the parsed mainFunction name
+        String mainEntryPointName = parsed.mainFunction != null ? parsed.mainFunction.getName() : "main";
+        Combinator mainCombinator = partiallyEvaluatedMap.get(mainEntryPointName);
 
+        if (mainCombinator != null) {
+            System.out.println("\n--- [DEBUG] Emitting x86 Assembly for: " + mainEntryPointName + " ---");
+            X86Emitter emitter = new X86Emitter();
+            X86Program program = emitter.compile(partiallyEvaluatedMap, mainEntryPointName);
+            String x86Assembly = program.emit();
+            System.out.println(x86Assembly);
+        } else {
+            System.out.println("\n--- [DEBUG] Could not find entry point '" + mainEntryPointName + "' for x86 emission. ---");
+        }
 
 
         return new CompilationResult(
