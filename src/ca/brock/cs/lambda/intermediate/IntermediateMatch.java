@@ -46,8 +46,19 @@ public class IntermediateMatch extends IntermediateTerm {
     }
 
     @Override
+//    public Set<String> getFreeVariables() {
+//        Set<String> freeVars = input.getFreeVariables();
+//        for (Case c : cases) {
+//            freeVars.addAll(c.result.getFreeVariables());
+//            // Remove pattern-bound variables
+//            freeVars.removeAll(c.pattern.getBoundVariables());
+//        }
+//        return freeVars;
+//    }
     public Set<String> getFreeVariables() {
-        Set<String> freeVars = input.getFreeVariables();
+        // THE FIX: Wrap the result in a new HashSet so it is mutable
+        Set<String> freeVars = new java.util.HashSet<>(input.getFreeVariables());
+
         for (Case c : cases) {
             freeVars.addAll(c.result.getFreeVariables());
             // Remove pattern-bound variables
@@ -57,13 +68,34 @@ public class IntermediateMatch extends IntermediateTerm {
     }
 
     @Override
+//    public IntermediateTerm methodT(boolean optimize) {
+//        List<Case> transformedCases = new java.util.ArrayList<>();
+//        for (Case c : cases) {
+//            transformedCases.add(new Case(
+//                c.pattern, // Patterns don't get transformed by methodT
+//                c.result.methodT(optimize)
+//            ));
+//        }
+//        return new IntermediateMatch(input.methodT(optimize), transformedCases);
+//    }
     public IntermediateTerm methodT(boolean optimize) {
         List<Case> transformedCases = new java.util.ArrayList<>();
         for (Case c : cases) {
-            transformedCases.add(new Case(
-                c.pattern, // Patterns don't get transformed by methodT
-                c.result.methodT(optimize)
-            ));
+            IntermediateTerm branchBody = c.getResult();
+
+            // 1. Get the variables bound by this case's pattern
+            java.util.List<String> boundVars = new java.util.ArrayList<>(c.getPattern().getBoundVariables());
+
+            // 2. Wrap the branch body in lambda abstractions for each bound variable
+            for (int i = boundVars.size() - 1; i >= 0; i--) {
+                branchBody = new IntermediateAbstraction(boundVars.get(i), branchBody);
+            }
+
+            // 3. THE FIX: Recursively compile the newly created abstractions to combinators
+            branchBody = branchBody.methodT(optimize);
+
+            // 4. Store the compiled branch back into a new Case
+            transformedCases.add(new Case(c.getPattern(), branchBody));
         }
         return new IntermediateMatch(input.methodT(optimize), transformedCases);
     }
