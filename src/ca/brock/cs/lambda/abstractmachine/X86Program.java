@@ -33,7 +33,7 @@ public class X86Program {
         // BSS Section: Uninitialized Data (Graph Heap)
         // ------------------------------------------------
         sb.append(".section .bss\n");
-        sb.append("    .lcomm HEAP, 1048576\n"); // Reserve 1MB for the heap
+        sb.append("    .lcomm HEAP, 67108864\n"); // Reserve 1MB for the heap
         sb.append("    .global heap_ptr\n\n");
 
         // ------------------------------------------------

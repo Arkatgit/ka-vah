@@ -1,3 +1,179 @@
+//package ca.brock.cs.lambda.combinators;
+//
+//import java.util.*;
+//
+///**
+// * Performs partial evaluation on combinator terms while skipping recursion.
+// */
+//public class CombinatorPartialEvaluator {
+//
+//    /**
+//     * Partially evaluates a map of combinators.
+//     */
+//    public static Map<String, Combinator> partialEvaluateAll(Map<String, Combinator> combinatorMap) {
+//        Map<String, Combinator> result = new HashMap<>();
+//        for (Map.Entry<String, Combinator> entry : combinatorMap.entrySet()) {
+//            result.put(entry.getKey(), partialEval(entry.getValue(), combinatorMap));
+//        }
+//        return result;
+//    }
+//
+//    /**
+//     * The core logic for partial evaluation.
+//     */
+//    public static Combinator partialEval(Combinator c, Map<String, Combinator> env) {
+//        // 1. Skip evaluation if it's a recursive function (contains Y combinator)
+//        if (isRecursive(c)) {
+//            return c;
+//        }
+//
+//        // 2. If it's an application, try to evaluate it partially
+//        if (c instanceof CombinatorApplication) {
+//            CombinatorApplication app = (CombinatorApplication) c;
+//
+//            // Recursively partially evaluate function and argument
+//            Combinator func = partialEval(app.getFunction(), env);
+//            Combinator arg = partialEval(app.getArgument(), env);
+//
+//            // --- CONSISTENCY FIX: Distribute arguments applied to a MatchCombinator ---
+//            if (func instanceof MatchCombinator) {
+//                MatchCombinator match = (MatchCombinator) func;
+//
+//                // Distribute argument to the match input
+//                Combinator newInput = new CombinatorApplication(match.getInput(), arg);
+//
+//                // Distribute argument to all branch results
+//                List<MatchCombinator.Case> newCases = new java.util.ArrayList<>();
+//                for (MatchCombinator.Case mc : match.getCases()) {
+//                    newCases.add(new MatchCombinator.Case(mc.getPattern(), new CombinatorApplication(mc.getResult(), arg)));
+//                }
+//
+//                // Return the newly constructed match to continue evaluation
+//                return partialEval(new MatchCombinator(newInput, newCases), env);
+//            }
+//
+//            Combinator newApp = new CombinatorApplication(func, arg);
+//
+//            // Try to reduce the application if it's not a recursive call
+//            try {
+//                // We use an empty local env to ensure we only fold constants and basic combinators
+//                return newApp.eval(new HashMap<>());
+//            } catch (Exception e) {
+//                // If evaluation fails (e.g., missing arguments), return the partially reduced application
+//                return newApp;
+//            }
+//        }
+//
+//        // =======================================================================
+//        // --- CONSISTENCY FIX: Resolve MatchCombinator when input is a Constructor ---
+//        // =======================================================================
+//        if (c instanceof MatchCombinator) {
+//            MatchCombinator match = (MatchCombinator) c;
+//            Combinator evaluatedInput = partialEval(match.getInput(), env);
+//
+//            // Check if the evaluated input is a Constructor Application
+//            if (isConstructorApplication(evaluatedInput)) {
+//                Combinator branchBody = getMatchingBranch(match, evaluatedInput);
+//                if (branchBody != null) {
+//                    List<Combinator> constructorArgs = extractConstructorArguments(evaluatedInput);
+//                    Combinator result = branchBody;
+//
+//                    // Apply the constructor arguments to the branch body
+//                    for (Combinator constrArg : constructorArgs) {
+//                        result = new CombinatorApplication(result, constrArg);
+//                    }
+//                    return partialEval(result, env);
+//                }
+//            }
+//            // If it's not a constructor yet, just return the match with evaluated input
+//            return new MatchCombinator(evaluatedInput, match.getCases());
+//        }
+//
+//        // 3. Variables: look up in environment if they are not recursive
+//        if (c instanceof CombinatorVariable) {
+//            String name = ((CombinatorVariable) c).getName();
+//            if (env.containsKey(name)) {
+//                Combinator def = env.get(name);
+//                if (!isRecursive(def)) {
+//                    return partialEval(def, env);
+//                }
+//            }
+//        }
+//
+//        return c;
+//    }
+//
+//    // =======================================================================
+//    // HELPER METHODS FOR MATCH AND CONSTRUCTOR RESOLUTION
+//    // =======================================================================
+//
+//    /**
+//     * Finds the base head of a combinator chain (usually a CombinatorConstant representing the constructor name).
+//     */
+//    private static Combinator getApplicationHead(Combinator c) {
+//        while (c instanceof CombinatorApplication) {
+//            c = ((CombinatorApplication) c).getFunction();
+//        }
+//        return c;
+//    }
+//
+//    /**
+//     * Checks if an evaluated combinator represents a fully formed constructor application.
+//     */
+//    private static boolean isConstructorApplication(Combinator c) {
+//        Combinator head = getApplicationHead(c);
+//        // Constructors and literals are represented as CombinatorConstants
+//        return head instanceof CombinatorConstant;
+//    }
+//
+//    /**
+//     * Extracts the arguments passed to a constructor application.
+//     * For example, for 'cons 1 tail', it traverses the applications and extracts [1, tail].
+//     */
+//    private static List<Combinator> extractConstructorArguments(Combinator c) {
+//        List<Combinator> args = new java.util.ArrayList<>();
+//        while (c instanceof CombinatorApplication) {
+//            CombinatorApplication app = (CombinatorApplication) c;
+//            // Add to the front to maintain order: [arg1, arg2, ...]
+//            args.add(0, app.getArgument());
+//            c = app.getFunction();
+//        }
+//        return args;
+//    }
+//
+//    /**
+//     * Finds the correct branch body in a MatchCombinator for a given evaluated constructor input.
+//     */
+//    private static Combinator getMatchingBranch(MatchCombinator match, Combinator evaluatedInput) {
+//        Combinator inputHead = getApplicationHead(evaluatedInput);
+//
+//        if (inputHead instanceof CombinatorConstant) {
+//            Object inputVal = ((CombinatorConstant) inputHead).getValue();
+//
+//            for (MatchCombinator.Case matchCase : match.getCases()) {
+//                Combinator patternHead = getApplicationHead(matchCase.getPattern());
+//
+//                if (patternHead instanceof CombinatorConstant) {
+//                    Object patternVal = ((CombinatorConstant) patternHead).getValue();
+//
+//                    // If the constructor names (or values) match exactly, return the branch result
+//                    if (inputVal != null && inputVal.equals(patternVal)) {
+//                        return matchCase.getResult();
+//                    }
+//                }
+//            }
+//        }
+//        return null; // No match found
+//    }
+//
+//    private static boolean isRecursive(Combinator c) {
+//        if (c instanceof CombinatorApplication) {
+//            return ((CombinatorApplication) c).getFunction() instanceof YCombinator;
+//        }
+//        return false;
+//    }
+//}
+
 package ca.brock.cs.lambda.combinators;
 
 import java.util.*;
@@ -35,6 +211,17 @@ public class CombinatorPartialEvaluator {
             Combinator func = partialEval(app.getFunction(), env);
             Combinator arg = partialEval(app.getArgument(), env);
 
+            // --- FIX: CStarCombinator Reduction (C* a b -> b a) ---
+            if (func instanceof CombinatorApplication) {
+                CombinatorApplication innerApp = (CombinatorApplication) func;
+                if (innerApp.getFunction() instanceof CStarCombinator) {
+                    Combinator a = innerApp.getArgument();
+                    Combinator b = arg;
+                    // Apply b to a, and recursively evaluate the new structure
+                    return partialEval(new CombinatorApplication(b, a), env);
+                }
+            }
+
             // --- CONSISTENCY FIX: Distribute arguments applied to a MatchCombinator ---
             if (func instanceof MatchCombinator) {
                 MatchCombinator match = (MatchCombinator) func;
@@ -54,14 +241,40 @@ public class CombinatorPartialEvaluator {
 
             Combinator newApp = new CombinatorApplication(func, arg);
 
-            // Try to reduce the application if it's not a recursive call
-            try {
-                // We use an empty local env to ensure we only fold constants and basic combinators
-                return newApp.eval(new HashMap<>());
-            } catch (Exception e) {
-                // If evaluation fails (e.g., missing arguments), return the partially reduced application
-                return newApp;
+            // =======================================================================
+            // --- CONSISTENCY FIX: Safe Reduction Gatekeeper ---
+            // Only evaluate if the combinator has received all its required arguments.
+            // This prevents partial applications (e.g., C I 0) from being corrupted.
+            // =======================================================================
+            if (isSaturated((CombinatorApplication) newApp)) {
+//                try {
+//                    // We use an empty local env to ensure we only fold constants and basic combinators
+//                    return newApp.eval(new HashMap<>());
+//                } catch (Exception e) {
+//                    // If evaluation fails, return the partially reduced application
+//                    return newApp;
+//                }
+                try {
+                    // We use an empty local env to ensure we only fold constants and basic combinators
+                    Combinator evaluated = newApp.eval(new HashMap<>());
+
+                    // --- CRITICAL FIX ---
+                    // If eval() successfully reduced the term (e.g., C f g x -> f x g),
+                    // we MUST recursively partially evaluate the new structure!
+                    // We use toString() equality to prevent infinite loops if eval() didn't change the AST.
+                    if (evaluated != newApp && !evaluated.toString().equals(newApp.toString())) {
+                        return partialEval(evaluated, env);
+                    }
+
+                    return evaluated;
+                } catch (Exception e) {
+                    // If evaluation fails, return the partially reduced application
+                    return newApp;
+                }
             }
+
+            // If not fully saturated with arguments, return the partial AST
+            return newApp;
         }
 
         // =======================================================================
@@ -104,8 +317,52 @@ public class CombinatorPartialEvaluator {
     }
 
     // =======================================================================
-    // HELPER METHODS FOR MATCH AND CONSTRUCTOR RESOLUTION
+    // HELPER METHODS FOR SATURATION, MATCH AND CONSTRUCTOR RESOLUTION
     // =======================================================================
+
+    /**
+     * Verifies if a combinator application has collected enough arguments to be
+     * safely evaluated without corrupting partial applications.
+     */
+    private static boolean isSaturated(CombinatorApplication app) {
+        List<Combinator> args = new java.util.ArrayList<>();
+        Combinator current = app;
+
+        // Unwind the application spine to collect all arguments
+        while (current instanceof CombinatorApplication) {
+            args.add(((CombinatorApplication) current).getArgument());
+            current = ((CombinatorApplication) current).getFunction();
+        }
+
+        int argCount = args.size();
+
+        // Check native combinator arities
+        if (current instanceof ICombinator) return argCount >= 1;
+        if (current instanceof KCombinator) return argCount >= 2;
+        if (current instanceof SCombinator) return argCount >= 3;
+        if (current instanceof BCombinator) return argCount >= 3;
+        if (current instanceof CCombinator) return argCount >= 3;
+        if (current instanceof WCombinator) return argCount >= 2;
+        if (current instanceof CStarCombinator) return argCount >= 2;
+
+        // Check native mathematical operators and conditionals
+        String opName = "";
+        if (current instanceof CombinatorConstant) {
+            opName = String.valueOf(((CombinatorConstant) current).getValue());
+        } else if (current instanceof CombinatorVariable) {
+            opName = ((CombinatorVariable) current).getName();
+        }
+
+        if ("IF".equals(opName)) return argCount >= 3;
+
+        List<String> binaryOps = Arrays.asList("+", "-", "*", "/", "==", "<=", ">=", "<", ">", "=");
+        if (binaryOps.contains(opName)) {
+            return argCount >= 2;
+        }
+
+        // Unknown or uninterpreted function, safer to not reduce at compile-time
+        return false;
+    }
 
     /**
      * Finds the base head of a combinator chain (usually a CombinatorConstant representing the constructor name).

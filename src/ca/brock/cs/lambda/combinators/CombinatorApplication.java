@@ -506,9 +506,12 @@ public class CombinatorApplication extends Combinator {
             return new ICombinator();
         }
 
-        // Rule 2: C I = C (or C*)
+//         Rule 2: C I = C (or C*)
+//        if (func instanceof CCombinator && arg instanceof ICombinator) {
+//            return func; // C I = C
+//        }
         if (func instanceof CCombinator && arg instanceof ICombinator) {
-            return func; // C I = C
+            return new CStarCombinator();
         }
 
         // Rule 3: S x I = W x
