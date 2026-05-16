@@ -1261,6 +1261,9 @@
 package ca.brock.cs.lambda.abstractmachine;
 
 import ca.brock.cs.lambda.combinators.*;
+import ca.brock.cs.lambda.types.FType;
+import ca.brock.cs.lambda.types.Type;
+
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -1281,7 +1284,7 @@ public class X86Emitter {
         this.externalVariables = new HashSet<>();
     }
 
-    public X86Program compile(Map<String, Combinator> globals, String entryPointName) {
+    public X86Program compile(Map<String, Combinator> globals,Map<String, Type> typeMap, String entryPointName) {
         for (String key : globals.keySet()) {
             definedFunctions.add(sanitizeLabel(key));
         }
@@ -1305,19 +1308,34 @@ public class X86Emitter {
         // ---------------------------------------------------------
         // GUARANTEED REDUCTION LOOP
         // Keep evaluating RAX until it resolves to a tagged integer
-        // ---------------------------------------------------------
-        program.addInstruction(new X86Instruction(".force_eval_loop"));
-        program.addInstruction(new X86Instruction(OpCodes.CALL, "lbl_eval"));
-        program.addInstruction(new X86Instruction(OpCodes.TEST, "rax", "1")); // Is LSB 1? (Integer check)
-        program.addInstruction(new X86Instruction(OpCodes.JNZ, ".force_eval_done")); // Yes, it's an int, break loop
-        // It evaluated to a function or thunk, loop again to force it
-        program.addInstruction(new X86Instruction(OpCodes.JMP, ".force_eval_loop"));
+//        // ---------------------------------------------------------
+//        program.addInstruction(new X86Instruction(".force_eval_loop"));
+//        program.addInstruction(new X86Instruction(OpCodes.CALL, "lbl_eval"));
+//        program.addInstruction(new X86Instruction(OpCodes.TEST, "rax", "1")); // Is LSB 1? (Integer check)
+//        program.addInstruction(new X86Instruction(OpCodes.JNZ, ".force_eval_done")); // Yes, it's an int, break loop
+//        // It evaluated to a function or thunk, loop again to force it
+//        program.addInstruction(new X86Instruction(OpCodes.JMP, ".force_eval_loop"));
+//
+//        program.addInstruction(new X86Instruction(".force_eval_done"));
+//        // ---------------------------------------------------------
+//
+//        // Result left in RAX, print it
+//        program.addInstruction(new X86Instruction(OpCodes.CALL, "lbl_print_int"));
+        Type mainType = typeMap.get(entryPointName);
 
-        program.addInstruction(new X86Instruction(".force_eval_done"));
-        // ---------------------------------------------------------
+        if (isListType(mainType)) {
+            program.addInstruction(new X86Instruction(OpCodes.CALL, "lbl_print_list"));
+        } else {
+            program.addInstruction(new X86Instruction(".force_eval_loop"));
+            program.addInstruction(new X86Instruction(OpCodes.CALL, "lbl_eval"));
+            program.addInstruction(new X86Instruction(OpCodes.TEST, "rax", "1"));
+            program.addInstruction(new X86Instruction(OpCodes.JNZ, ".force_eval_done"));
+            program.addInstruction(new X86Instruction(OpCodes.JMP, ".force_eval_loop"));
 
-        // Result left in RAX, print it
-        program.addInstruction(new X86Instruction(OpCodes.CALL, "lbl_print_int"));
+            program.addInstruction(new X86Instruction(".force_eval_done"));
+            program.addInstruction(new X86Instruction(OpCodes.CALL, "lbl_print_int"));
+        }
+
 
         program.addInstruction(new X86Instruction(OpCodes.MOV, Registers.RAX.toString(), "60")); // sys_exit
         program.addInstruction(new X86Instruction(OpCodes.MOV, Registers.RDI.toString(), "0"));
@@ -1326,7 +1344,9 @@ public class X86Emitter {
         for (Map.Entry<String, Combinator> entry : globals.entrySet()) {
             String label = sanitizeLabel(entry.getKey());
             // User-defined globals act as thunks (arity 0).
-            program.addInstruction(new X86Instruction(".p2align 3\n.quad 0\n" + label));
+//            program.addInstruction(new X86Instruction(".p2align 3\n.quad 0\n" + label));
+            int arity = getTopLevelArity(typeMap.get(entry.getKey()));
+            program.addInstruction(new X86Instruction(".p2align 3\n.quad " + arity + "\n" + label));
             program.addInstruction(new X86Instruction(OpCodes.POP, Registers.R15.toString()));
 
             emitTerm(entry.getValue());
@@ -1339,6 +1359,7 @@ public class X86Emitter {
         emitCombinatorRuntime();
         emitNativeOperators();
         emitPrintIntRoutine();
+        emitPrintListRoutine();
 //        emitDataSections();
 
         return program;
@@ -1783,6 +1804,83 @@ public class X86Emitter {
         program.addInstruction(new X86Instruction(".do_true"));
         program.addInstruction(new X86Instruction(OpCodes.MOV, "rax", "rbx")); // Select True Graph
         program.addInstruction(new X86Instruction(".if_done"));
+        program.addInstruction(new X86Instruction(OpCodes.PUSH, "r15"));
+        program.addInstruction(new X86Instruction(OpCodes.RET));
+    }
+
+    private int getTopLevelArity(Type type) {
+        int arity = 0;
+
+        while (type instanceof FType) {
+            arity++;
+            type = ((FType) type).getOutput();
+        }
+
+        return arity;
+    }
+
+    private boolean isListType(Type type) {
+        return type != null && type.toString().contains("list");
+    }
+
+    private void emitPrintListRoutine() {
+        program.addInstruction(new X86Instruction(".p2align 3\nlbl_print_list"));
+        program.addInstruction(new X86Instruction(OpCodes.CALL, "lbl_print_list_raw"));
+        program.addInstruction(new X86Instruction(OpCodes.RET));
+
+        program.addInstruction(new X86Instruction(".p2align 3\nlbl_print_list_raw"));
+        program.addInstruction(new X86Instruction(OpCodes.PUSH, "rbx"));
+        program.addInstruction(new X86Instruction(OpCodes.PUSH, "rcx"));
+
+        program.addInstruction(new X86Instruction(OpCodes.MOV, "rbx", "rax"));
+
+        program.addInstruction(new X86Instruction(OpCodes.LEA, "rcx", "[lbl_list_empty_handler]"));
+        program.addInstruction(new X86Instruction(OpCodes.OR, "rcx", "2"));
+
+        program.addInstruction(new X86Instruction(OpCodes.CALL, "lbl_alloc_node"));
+        program.addInstruction(new X86Instruction(OpCodes.MOV, "[rax]", "rbx"));
+        program.addInstruction(new X86Instruction(OpCodes.MOV, "[rax+8]", "rcx"));
+
+        program.addInstruction(new X86Instruction(OpCodes.MOV, "rbx", "rax"));
+
+        program.addInstruction(new X86Instruction(OpCodes.LEA, "rcx", "[lbl_list_cons_handler]"));
+        program.addInstruction(new X86Instruction(OpCodes.OR, "rcx", "2"));
+
+        program.addInstruction(new X86Instruction(OpCodes.CALL, "lbl_alloc_node"));
+        program.addInstruction(new X86Instruction(OpCodes.MOV, "[rax]", "rbx"));
+        program.addInstruction(new X86Instruction(OpCodes.MOV, "[rax+8]", "rcx"));
+
+        program.addInstruction(new X86Instruction(OpCodes.CALL, "lbl_eval"));
+
+        program.addInstruction(new X86Instruction(OpCodes.POP, "rcx"));
+        program.addInstruction(new X86Instruction(OpCodes.POP, "rbx"));
+        program.addInstruction(new X86Instruction(OpCodes.RET));
+
+        program.addInstruction(new X86Instruction(".p2align 3\n.quad 0\nlbl_list_empty_handler"));
+        program.addInstruction(new X86Instruction(OpCodes.POP, "r15"));
+        program.addInstruction(new X86Instruction(OpCodes.MOV, "rax", "1"));
+        program.addInstruction(new X86Instruction(OpCodes.PUSH, "r15"));
+        program.addInstruction(new X86Instruction(OpCodes.RET));
+
+        program.addInstruction(new X86Instruction(".p2align 3\n.quad 2\nlbl_list_cons_handler"));
+        program.addInstruction(new X86Instruction(OpCodes.POP, "r15"));
+        program.addInstruction(new X86Instruction(OpCodes.POP, "rbx"));
+        program.addInstruction(new X86Instruction(OpCodes.POP, "rcx"));
+
+        program.addInstruction(new X86Instruction(OpCodes.PUSH, "rcx"));
+        program.addInstruction(new X86Instruction(OpCodes.PUSH, "r15"));
+        program.addInstruction(new X86Instruction(OpCodes.MOV, "rax", "rbx"));
+        program.addInstruction(new X86Instruction(OpCodes.CALL, "lbl_eval"));
+        program.addInstruction(new X86Instruction(OpCodes.CALL, "lbl_print_int"));
+        program.addInstruction(new X86Instruction(OpCodes.POP, "r15"));
+        program.addInstruction(new X86Instruction(OpCodes.POP, "rcx"));
+
+        program.addInstruction(new X86Instruction(OpCodes.PUSH, "r15"));
+        program.addInstruction(new X86Instruction(OpCodes.MOV, "rax", "rcx"));
+        program.addInstruction(new X86Instruction(OpCodes.CALL, "lbl_print_list_raw"));
+        program.addInstruction(new X86Instruction(OpCodes.POP, "r15"));
+
+        program.addInstruction(new X86Instruction(OpCodes.MOV, "rax", "1"));
         program.addInstruction(new X86Instruction(OpCodes.PUSH, "r15"));
         program.addInstruction(new X86Instruction(OpCodes.RET));
     }

@@ -285,7 +285,7 @@ public class LambdaCompiler {
         if (mainCombinator != null) {
             System.out.println("\n--- [DEBUG] Emitting x86 Assembly for: " + mainEntryPointName + " ---");
             X86Emitter emitter = new X86Emitter();
-            X86Program program = emitter.compile(partiallyEvaluatedMap, mainEntryPointName);
+            X86Program program = emitter.compile(partiallyEvaluatedMap,types, mainEntryPointName);
             String x86Assembly = program.emit();
             System.out.println(x86Assembly);
         } else {
