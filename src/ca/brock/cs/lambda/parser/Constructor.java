@@ -161,15 +161,25 @@ public class Constructor extends Term implements DefinedValue {
         return Collections.emptySet(); // Constructors have no free variables
     }
 
+//    @Override
+//    public Combinator translate() {
+//        // Translate a constructor to a CombinatorConstant
+//        return new CombinatorConstant(name);
+//    }
+//
+//    @Override
+//    public IntermediateTerm toIntermediateTerm() {
+//        // A constructor term is converted into an IntermediateConstructor term.
+//        return new IntermediateConstructor(name);
+//    }
+
     @Override
     public Combinator translate() {
-        // Translate a constructor to a CombinatorConstant
-        return new CombinatorConstant(name);
+        return ScottEncoding.encodeConstructor(name).translate();
     }
 
     @Override
     public IntermediateTerm toIntermediateTerm() {
-        // A constructor term is converted into an IntermediateConstructor term.
-        return new IntermediateConstructor(name);
+        return ScottEncoding.encodeConstructor(name).toIntermediateTerm();
     }
 }

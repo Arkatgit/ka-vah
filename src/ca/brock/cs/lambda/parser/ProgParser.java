@@ -110,10 +110,14 @@ public class ProgParser {
                 symbolMap.put(adtName, completeAdt);
 
                 // REGISTER CONSTRUCTORS
-                List<String> constructorNames = constructorsData.stream()
-                    .map(cd -> cd.name)
+//                List<String> constructorNames = constructorsData.stream()
+//                    .map(cd -> cd.name)
+//                    .collect(Collectors.toList());
+//                ConstructorRegistry.registerType(typeName, constructorNames);
+                List<ConstructorRegistry.ConstructorDataView> constructorViews = constructorsData.stream()
+                    .map(cd -> new ConstructorRegistry.ConstructorDataView(cd.name, cd.types.size()))
                     .collect(Collectors.toList());
-                ConstructorRegistry.registerType(typeName, constructorNames);
+                ConstructorRegistry.registerType(typeName, constructorViews);
 
 
                 return null;

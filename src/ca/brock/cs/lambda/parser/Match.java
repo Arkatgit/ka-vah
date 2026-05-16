@@ -289,60 +289,69 @@ public class Match extends Term {
         return freeVars;
     }
 
+//    @Override
+//    public Combinator translate() {
+//        // T[M N] = T[M] T[N]
+//        return null;
+//    }
+//
+//    /**
+//     * Converts this lambda calculus term into an IntermediateTerm.
+//     * This is the first step in the two-phase translation to combinators.
+//     *
+//     * @return The equivalent IntermediateTerm.
+//     */
+//    @Override
+//    public IntermediateTerm toIntermediateTerm() {
+//        // Convert each case to intermediate form
+//        List<IntermediateMatch.Case> intermediateCases = new ArrayList<>();
+//        for (Case c : cases) {
+//            IntermediatePattern patternTerm = convertPatternToIntermediate(c.getPattern());
+//            IntermediateTerm resultTerm = c.getResult().toIntermediateTerm();
+//            intermediateCases.add(new IntermediateMatch.Case(patternTerm, resultTerm));
+//        }
+//
+//        return new IntermediateMatch(inputTerm.toIntermediateTerm(), intermediateCases);
+//    }
+//
+//    private IntermediatePattern convertPatternToIntermediate(Pattern pattern) {
+//        if (pattern instanceof VariablePattern) {
+//            VariablePattern vp = (VariablePattern) pattern;
+//            return new IntermediateVariablePattern(vp.getName());
+//        } else if (pattern instanceof ConstructorPattern) {
+//            ConstructorPattern cp = (ConstructorPattern) pattern;
+//            List<Pattern> subPatterns = cp.getPatterns();
+//
+//            // Convert sub-patterns
+//            List<IntermediatePattern> intermediateSubPatterns = new ArrayList<>();
+//            for (Pattern subPattern : subPatterns) {
+//                intermediateSubPatterns.add(convertPatternToIntermediate(subPattern));
+//            }
+//
+//            return new IntermediateConstructorPattern(cp.getName(), intermediateSubPatterns);
+//        } else if (pattern instanceof ConstantPattern) {
+//            ConstantPattern constPattern = (ConstantPattern) pattern;
+//            Term constant = constPattern.getConstant();
+//            if (constant instanceof IntegerLiteral) {
+//                return new IntermediateConstantPattern(((IntegerLiteral) constant).getValue());
+//            } else if (constant instanceof BooleanLiteral) {
+//                return new IntermediateConstantPattern(((BooleanLiteral) constant).getValue());
+//            } else if (constant instanceof Constant) {
+//                return new IntermediateConstantPattern(((Constant) constant).getValue());
+//            } else {
+//                return new IntermediateConstantPattern(constant.toString());
+//            }
+//        } else {
+//            throw new IllegalArgumentException("Unknown pattern type: " + pattern.getClass().getSimpleName());
+//        }
+//    }
     @Override
     public Combinator translate() {
-        // T[M N] = T[M] T[N]
-        return null;
+        return ScottEncoding.encodeMatch(this).translate();
     }
 
-    /**
-     * Converts this lambda calculus term into an IntermediateTerm.
-     * This is the first step in the two-phase translation to combinators.
-     *
-     * @return The equivalent IntermediateTerm.
-     */
     @Override
     public IntermediateTerm toIntermediateTerm() {
-        // Convert each case to intermediate form
-        List<IntermediateMatch.Case> intermediateCases = new ArrayList<>();
-        for (Case c : cases) {
-            IntermediatePattern patternTerm = convertPatternToIntermediate(c.getPattern());
-            IntermediateTerm resultTerm = c.getResult().toIntermediateTerm();
-            intermediateCases.add(new IntermediateMatch.Case(patternTerm, resultTerm));
-        }
-
-        return new IntermediateMatch(inputTerm.toIntermediateTerm(), intermediateCases);
-    }
-
-    private IntermediatePattern convertPatternToIntermediate(Pattern pattern) {
-        if (pattern instanceof VariablePattern) {
-            VariablePattern vp = (VariablePattern) pattern;
-            return new IntermediateVariablePattern(vp.getName());
-        } else if (pattern instanceof ConstructorPattern) {
-            ConstructorPattern cp = (ConstructorPattern) pattern;
-            List<Pattern> subPatterns = cp.getPatterns();
-
-            // Convert sub-patterns
-            List<IntermediatePattern> intermediateSubPatterns = new ArrayList<>();
-            for (Pattern subPattern : subPatterns) {
-                intermediateSubPatterns.add(convertPatternToIntermediate(subPattern));
-            }
-
-            return new IntermediateConstructorPattern(cp.getName(), intermediateSubPatterns);
-        } else if (pattern instanceof ConstantPattern) {
-            ConstantPattern constPattern = (ConstantPattern) pattern;
-            Term constant = constPattern.getConstant();
-            if (constant instanceof IntegerLiteral) {
-                return new IntermediateConstantPattern(((IntegerLiteral) constant).getValue());
-            } else if (constant instanceof BooleanLiteral) {
-                return new IntermediateConstantPattern(((BooleanLiteral) constant).getValue());
-            } else if (constant instanceof Constant) {
-                return new IntermediateConstantPattern(((Constant) constant).getValue());
-            } else {
-                return new IntermediateConstantPattern(constant.toString());
-            }
-        } else {
-            throw new IllegalArgumentException("Unknown pattern type: " + pattern.getClass().getSimpleName());
-        }
+        return ScottEncoding.encodeMatch(this).toIntermediateTerm();
     }
 }
