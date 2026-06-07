@@ -1,0 +1,6 @@
+data Box a = Emptybox | Fullbox a;
+
+unbox : Box Int -> Int;
+unbox = λb. match b with Emptybox -> 0 | Fullbox val -> val end;
+
+main = unbox (Fullbox 42);

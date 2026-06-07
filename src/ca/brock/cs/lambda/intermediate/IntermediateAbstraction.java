@@ -208,23 +208,6 @@ public class IntermediateAbstraction extends IntermediateTerm {
             );
         }
 
-        // --- CORRECTED RULE: Distribute Abstraction to Input and Cases ---
-        if (transformedBody instanceof IntermediateMatch) {
-            IntermediateMatch match = (IntermediateMatch) transformedBody;
-
-            // 1. Abstract over the input expression
-            IntermediateTerm abstractedInput = new IntermediateAbstraction(parameter, match.getInput()).methodT(optimize);
-
-            // 2. Abstract over every branch result
-            List<IntermediateMatch.Case> abstractedCases = new java.util.ArrayList<>();
-            for (IntermediateMatch.Case c : match.getCases()) {
-                // Distribute the abstraction into the compiled branch body
-                IntermediateTerm abstractedBranch = new IntermediateAbstraction(parameter, c.getResult()).methodT(optimize);
-                abstractedCases.add(new IntermediateMatch.Case(c.getPattern(), abstractedBranch));
-            }
-
-            return new IntermediateMatch(abstractedInput, abstractedCases);
-        }
 
         // Failsafe
         return this;

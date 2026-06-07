@@ -1,0 +1,22 @@
+data list a = emptylist | cons a (list a);
+
+filterLE : (a -> a -> Bool) -> a -> list a -> list a;
+filterLE = rec fle. λleq. λpivot. λxs. match xs with emptylist -> emptylist | cons x xstail -> if leq x pivot then cons x (fle leq pivot xstail) else fle leq pivot xstail end;
+
+filterGT : (a -> a -> Bool) -> a -> list a -> list a;
+filterGT = rec fgt. λleq. λpivot. λxs. match xs with emptylist -> emptylist | cons x xstail -> if leq x pivot then fgt leq pivot xstail else cons x (fgt leq pivot xstail) end;
+
+append : list a -> list a -> list a;
+append = rec app. λxs. λys. match xs with emptylist -> ys | cons x xstail -> cons x (app xstail ys) end;
+
+quicksort : (a -> a -> Bool) -> list a -> list a;
+quicksort = rec qsort. λleq. λxs. match xs with emptylist -> emptylist | cons pivot rest -> append (qsort leq (filterLE leq pivot rest)) (cons pivot (qsort leq (filterGT leq pivot rest))) end;
+
+leqInt : Int -> Int -> Bool;
+leqInt = λx. λy. x <= y;
+
+myList : list Int;
+myList = cons 3 (cons 1 (cons 4 (cons 1 (cons 5 (cons 9 (cons 2 (cons 6 (cons 5 (cons 3 (cons 5 emptylist))))))))));
+
+main : list Int;
+main = quicksort leqInt myList;

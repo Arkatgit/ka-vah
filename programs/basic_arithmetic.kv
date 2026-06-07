@@ -1,0 +1,7 @@
+square : Int -> Int;
+square = λx.x * x;
+
+addSquare : Int -> Int -> Int;
+addSquare = λa.λb.((a + 1) * (a + 1)) + (b * b);
+
+main = addSquare 3 4;
