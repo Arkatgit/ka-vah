@@ -1,0 +1,56 @@
+data List a = Empty | Cons a (List a);
+
+abs : Int -> Int;
+abs = λx.
+    if x <= 0
+    then 0 - x
+    else x;
+
+safeFrom : Int -> Int -> List Int -> Bool;
+safeFrom = rec safe. λnewCol. λdistance. λplaced.
+    match placed with
+        Empty -> True
+        | Cons oldCol rest ->
+            if newCol = oldCol
+            then False
+            else if (abs (newCol - oldCol)) = distance
+            then False
+            else safe newCol (distance + 1) rest
+    end;
+
+countQueens : Int -> Int -> List Int -> Int;
+countQueens = rec place. λn. λrow. λplaced.
+    if n <= row
+    then 1
+    else countCols n row placed 1;
+
+countCols : Int -> Int -> List Int -> Int -> Int;
+countCols = rec try. λn. λrow. λplaced. λcol.
+    if n <= (col - 1)
+    then 0
+    else
+        if safeFrom col 1 placed
+        then
+            (countQueens
+                n
+                (row + 1)
+                (Cons col placed))
+            +
+            (try
+                n
+                row
+                placed
+                (col + 1))
+        else
+            try
+                n
+                row
+                placed
+                (col + 1);
+
+queens : Int -> Int;
+queens = λn.
+    countQueens n 0 Empty;
+
+main : Int;
+main = queens 8;

@@ -1,0 +1,19 @@
+data list a = emptylist | cons a (list a);
+
+valueNIP_aux : list Int -> Int -> Int;
+valueNIP_aux = rec f. λcoeffs. λx.
+    match coeffs with
+        emptylist -> 1
+      | cons a rest -> a + (x * (f rest x))
+    end;
+
+valueNIP : list Int -> Int -> Int;
+valueNIP = λpoly. λx.
+    valueNIP_aux poly x;
+
+main =
+    valueNIP
+        (cons (-5)
+        (cons (-4)
+        emptylist))
+        5;

@@ -1,0 +1,52 @@
+data Tree = Leaf Int | Node Int Tree Tree;
+
+hash2 : Int -> Int -> Int;
+hash2 = λx. λy.
+    ((x * 31) + (y * 17)) + 7;
+
+rootHash : Tree -> Int;
+rootHash = λt.
+    match t with
+        Leaf h -> h
+        | Node h left right -> h
+    end;
+
+makeLeaf : Int -> Tree;
+makeLeaf = λx.
+    Leaf ((x * 31) + 7);
+
+makeNode : Tree -> Tree -> Tree;
+makeNode = λleft. λright.
+    Node
+        (hash2 (rootHash left) (rootHash right))
+        left
+        right;
+
+buildLevel1 : Int -> Tree;
+buildLevel1 = λx.
+    makeNode
+        (makeLeaf x)
+        (makeLeaf (x + 1));
+
+buildLevel2 : Int -> Tree;
+buildLevel2 = λx.
+    makeNode
+        (buildLevel1 x)
+        (buildLevel1 (x + 2));
+
+buildLevel3 : Int -> Tree;
+buildLevel3 = λx.
+    makeNode
+        (buildLevel2 x)
+        (buildLevel2 (x + 4));
+
+checkTree : Tree -> Int;
+checkTree = rec check. λt.
+    match t with
+        Leaf h -> h
+        | Node h left right ->
+            h + (check left) + (check right)
+    end;
+
+main : Int;
+main = checkTree (buildLevel3 1);

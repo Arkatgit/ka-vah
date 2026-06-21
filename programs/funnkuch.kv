@@ -1,0 +1,103 @@
+data List a = Empty | Cons a (List a);
+
+append : List a -> List a -> List a;
+append = rec app. λxs. λys.
+    match xs with
+        Empty -> ys
+        | Cons x rest -> Cons x (app rest ys)
+    end;
+
+map : (a -> b) -> List a -> List b;
+map = rec mapit. λf. λxs.
+    match xs with
+        Empty -> Empty
+        | Cons x rest -> Cons (f x) (mapit f rest)
+    end;
+
+concat : List (List a) -> List a;
+concat = rec c. λxss.
+    match xss with
+        Empty -> Empty
+        | Cons xs rest -> append xs (c rest)
+    end;
+
+max : Int -> Int -> Int;
+max = λx. λy.
+    if x <= y then y else x;
+
+reverse : List a -> List a;
+reverse = rec rev. λxs.
+    match xs with
+        Empty -> Empty
+        | Cons x rest -> append (rev rest) (Cons x Empty)
+    end;
+
+take : Int -> List a -> List a;
+take = rec t. λn. λxs.
+    if n <= 0
+    then Empty
+    else match xs with
+        Empty -> Empty
+        | Cons x rest -> Cons x (t (n - 1) rest)
+    end;
+
+drop : Int -> List a -> List a;
+drop = rec d. λn. λxs.
+    if n <= 0
+    then xs
+    else match xs with
+        Empty -> Empty
+        | Cons x rest -> d (n - 1) rest
+    end;
+
+reversePrefix : Int -> List a -> List a;
+reversePrefix = λn. λxs.
+    append (reverse (take n xs)) (drop n xs);
+
+head : List Int -> Int;
+head = λxs.
+    match xs with
+        Empty -> 1
+        | Cons x rest -> x
+    end;
+
+flipCount : List Int -> Int;
+flipCount = rec count. λperm.
+    if (head perm) = 1
+    then 0
+    else 1 + (count (reversePrefix (head perm) perm));
+
+insertEverywhere : Int -> List Int -> List (List Int);
+insertEverywhere = rec ins. λx. λxs.
+    match xs with
+        Empty -> Cons (Cons x Empty) Empty
+        | Cons y ys ->
+            Cons
+                (Cons x (Cons y ys))
+                (map (λzs. Cons y zs) (ins x ys))
+    end;
+
+permsFrom : Int -> Int -> List (List Int);
+permsFrom = rec p. λcurrent. λn.
+    if n <= current
+    then Cons (Cons current Empty) Empty
+    else concat
+        (map
+            (insertEverywhere current)
+            (p (current + 1) n));
+
+perms : Int -> List (List Int);
+perms = λn. permsFrom 1 n;
+
+maxFlips : List (List Int) -> Int;
+maxFlips = rec mf. λps.
+    match ps with
+        Empty -> 0
+        | Cons p rest -> max (flipCount p) (mf rest)
+    end;
+
+fannkuch : Int -> Int;
+fannkuch = λn. maxFlips (perms n);
+
+main : Int;
+main = fannkuch 4;
