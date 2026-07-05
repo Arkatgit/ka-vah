@@ -10,6 +10,9 @@ public class X86Program {
     private final List<X86Instruction> instructions;
     private final List<String> dataSection;
 
+//    private static final long HEAP_SIZE = 512L * 1024 * 1024; // 512 MB
+    private static final long HEAP_SIZE = 1L * 1024 * 1024 * 1024; // 1 GB
+
     public X86Program() {
         this.instructions = new ArrayList<>();
         this.dataSection = new ArrayList<>();
@@ -33,7 +36,8 @@ public class X86Program {
         // BSS Section: Uninitialized Data (Graph Heap)
         // ------------------------------------------------
         sb.append(".section .bss\n");
-        sb.append("    .lcomm HEAP, 67108864\n"); // Reserve 1MB for the heap
+//        sb.append("    .lcomm HEAP, 67108864\n"); // Reserve 1MB for the heap
+        sb.append("    .lcomm HEAP, " + HEAP_SIZE + "\n");
         sb.append("    .global heap_ptr\n\n");
 
         // ------------------------------------------------

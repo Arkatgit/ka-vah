@@ -1,0 +1,12 @@
+tak : Int -> Int -> Int -> Int;
+tak = rec t. λx. λy. λz.
+    if x <= y
+    then z
+    else
+        t
+            (t (x - 1) y z)
+            (t (y - 1) z x)
+            (t (z - 1) x y);
+
+main : Int;
+main = tak 10 2 9;

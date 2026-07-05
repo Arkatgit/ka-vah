@@ -1,0 +1,65 @@
+data Tree = Leaf Int | Node Tree Tree;
+
+minDepth : Int;
+minDepth = 4;
+
+hashLeaf : Int -> Int;
+hashLeaf = λx.
+    (x * 131) + 7;
+
+hashNode : Int -> Int -> Int;
+hashNode = λleftHash. λrightHash.
+    (leftHash * 31) + (rightHash * 17) + 1;
+
+makeTree : Int -> Int -> Tree;
+makeTree = rec build. λdepth. λseed.
+    if depth = 0
+    then Leaf seed
+    else
+        Node
+            (build (depth - 1) (seed * 2))
+            (build (depth - 1) ((seed * 2) + 1));
+
+computeHash : Tree -> Int;
+computeHash = rec h. λtree.
+    match tree with
+        Leaf value ->
+            hashLeaf value
+
+        | Node left right ->
+            hashNode
+                (h left)
+                (h right)
+    end;
+
+sumTrees : Int -> Int -> Int -> Int;
+sumTrees = rec loop. λdepth. λcount. λacc.
+    if count = 0
+    then acc
+    else
+        loop
+            depth
+            (count - 1)
+            (acc + computeHash (makeTree depth count));
+
+pow2 : Int -> Int;
+pow2 = rec p. λn.
+    if n = 0
+    then 1
+    else 2 * p (n - 1);
+
+depthLoop : Int -> Int -> Int -> Int;
+depthLoop = rec loop. λdepth. λmaxDepth. λacc.
+    if depth <= maxDepth
+    then
+        loop
+            (depth + 2)
+            maxDepth
+            (acc + sumTrees depth (pow2 (maxDepth - depth + minDepth)) 0)
+    else acc;
+
+main : Int;
+main =
+    depthLoop minDepth 9 0
+    + computeHash (makeTree 7 1)
+    + computeHash (makeTree 8 1);

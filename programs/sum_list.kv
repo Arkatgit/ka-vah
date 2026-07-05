@@ -1,0 +1,4 @@
+data list a = emptylist | cons a (list a);
+sum : list Int -> Int;
+sum = rec sumit. λxs. match xs with emptylist -> 0 | cons x xs_tail -> x + (sumit xs_tail) end;
+main = sum (cons 1 (cons 2 (cons 3 emptylist)));

@@ -1,0 +1,9 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="ka-vah:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/ka_vah_jar</output-path>
+    <root id="archive" name="ka-vah.jar">
+      <element id="module-output" name="ka-vah" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/libs/jparsec-3.1.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>

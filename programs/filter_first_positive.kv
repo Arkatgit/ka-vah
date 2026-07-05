@@ -1,0 +1,20 @@
+data list a = emptylist | cons a (list a);
+
+filterPositive : list Int -> list Int;
+filterPositive = rec fp.  λxs.
+    match xs with
+        emptylist -> emptylist
+        | cons x xs_tail ->
+            if 0 <= x
+            then cons x (fp xs_tail)
+            else fp xs_tail
+    end;
+
+sum : list Int -> Int;
+sum = rec sumit. λxs.
+    match xs with
+        emptylist -> 0
+        | cons x xs_tail -> x + (sumit xs_tail)
+    end;
+
+main = sum (filterPositive (cons 4 (cons (0-2) (cons 7 emptylist))));

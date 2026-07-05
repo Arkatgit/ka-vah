@@ -211,15 +211,30 @@ public class TermOptimizer {
     private Term applyCSE(Term term, String targetKey, List<String> binders) {
         if (term == null) return null;
 
+//        if (canExtractHere(term, targetKey, binders)) {
+//            Term candidate = findExample(term, targetKey, binders);
+//            if (candidate != null) {
+//                String freshVar = "y" + (++freshVarCounter);
+//                Term body = replaceWithVariable(term, targetKey, binders, freshVar);
+//                // Extract into Application(Abstraction, Argument)
+//                return new Application(new Abstraction(freshVar, body), candidate);
+//            }
+//        }
         if (canExtractHere(term, targetKey, binders)) {
             Term candidate = findExample(term, targetKey, binders);
+
             if (candidate != null) {
-                String freshVar = "y" + (++freshVarCounter);
-                Term body = replaceWithVariable(term, targetKey, binders, freshVar);
-                // Extract into Application(Abstraction, Argument)
-                return new Application(new Abstraction(freshVar, body), candidate);
+                Set<String> freeVars = candidate.getFreeVariables();
+
+                if (binders.containsAll(freeVars)) {
+                    String freshVar = "y" + (++freshVarCounter);
+                    Term body = replaceWithVariable(term, targetKey, binders, freshVar);
+                    return new Application(new Abstraction(freshVar, body), candidate);
+                }
             }
         }
+
+
 
         // Standard recursion for all term types...
         if (term instanceof Application) {
@@ -332,6 +347,12 @@ public class TermOptimizer {
             if (Integer.parseInt(m.group(1)) >= stackSize) return false;
         }
         return true;
+//        return !java.util.regex.Pattern
+//            .compile("B\\d+")
+//            .matcher(key)
+//            .find();
+
+
     }
 
     private int countOccurrences(String text, String target) {

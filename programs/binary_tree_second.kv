@@ -1,0 +1,55 @@
+data Tree = Nil | Node Tree Tree;
+
+minN : Int;
+minN = 4;
+
+max : Int -> Int -> Int;
+max = λa. λb.
+    if a <= b then b else a;
+
+makePrime : Int -> Int -> Tree;
+makePrime = rec build. λn. λd.
+    if d = 0
+    then Node Nil Nil
+    else Node
+        (build (n - 1) (d - 1))
+        (build (n + 1) (d - 1));
+
+make : Int -> Tree;
+make = λd.
+    makePrime d d;
+
+check : Tree -> Int;
+check = rec c. λt.
+    match t with
+        Nil -> 0
+        | Node l r -> 1 + c l + c r
+    end;
+
+sumT : Int -> Int -> Int -> Int;
+sumT = rec loop. λd. λi. λacc.
+    if i = 0
+    then acc
+    else loop d (i - 1) (acc + check (make d));
+
+pow2 : Int -> Int;
+pow2 = rec p. λn.
+    if n = 0
+    then 1
+    else 2 * p (n - 1);
+
+depthLoop : Int -> Int -> Int -> Int;
+depthLoop = rec loop. λd. λm. λacc.
+    if d <= m
+    then
+        loop
+            (d + 2)
+            m
+            (acc + sumT d (pow2 (m - d + minN)) 0)
+    else acc;
+
+main : Int;
+main =
+    depthLoop minN 10 0
+    + check (make 22)
+    + check (make 21);

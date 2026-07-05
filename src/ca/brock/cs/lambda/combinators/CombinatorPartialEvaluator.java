@@ -222,23 +222,6 @@ public class CombinatorPartialEvaluator {
                 }
             }
 
-            // --- CONSISTENCY FIX: Distribute arguments applied to a MatchCombinator ---
-            if (func instanceof MatchCombinator) {
-                MatchCombinator match = (MatchCombinator) func;
-
-                // Distribute argument to the match input
-                Combinator newInput = new CombinatorApplication(match.getInput(), arg);
-
-                // Distribute argument to all branch results
-                List<MatchCombinator.Case> newCases = new java.util.ArrayList<>();
-                for (MatchCombinator.Case mc : match.getCases()) {
-                    newCases.add(new MatchCombinator.Case(mc.getPattern(), new CombinatorApplication(mc.getResult(), arg)));
-                }
-
-                // Return the newly constructed match to continue evaluation
-                return partialEval(new MatchCombinator(newInput, newCases), env);
-            }
-
             Combinator newApp = new CombinatorApplication(func, arg);
 
             // =======================================================================
@@ -275,31 +258,6 @@ public class CombinatorPartialEvaluator {
 
             // If not fully saturated with arguments, return the partial AST
             return newApp;
-        }
-
-        // =======================================================================
-        // --- CONSISTENCY FIX: Resolve MatchCombinator when input is a Constructor ---
-        // =======================================================================
-        if (c instanceof MatchCombinator) {
-            MatchCombinator match = (MatchCombinator) c;
-            Combinator evaluatedInput = partialEval(match.getInput(), env);
-
-            // Check if the evaluated input is a Constructor Application
-            if (isConstructorApplication(evaluatedInput)) {
-                Combinator branchBody = getMatchingBranch(match, evaluatedInput);
-                if (branchBody != null) {
-                    List<Combinator> constructorArgs = extractConstructorArguments(evaluatedInput);
-                    Combinator result = branchBody;
-
-                    // Apply the constructor arguments to the branch body
-                    for (Combinator constrArg : constructorArgs) {
-                        result = new CombinatorApplication(result, constrArg);
-                    }
-                    return partialEval(result, env);
-                }
-            }
-            // If it's not a constructor yet, just return the match with evaluated input
-            return new MatchCombinator(evaluatedInput, match.getCases());
         }
 
         // 3. Variables: look up in environment if they are not recursive
@@ -398,30 +356,6 @@ public class CombinatorPartialEvaluator {
         return args;
     }
 
-    /**
-     * Finds the correct branch body in a MatchCombinator for a given evaluated constructor input.
-     */
-    private static Combinator getMatchingBranch(MatchCombinator match, Combinator evaluatedInput) {
-        Combinator inputHead = getApplicationHead(evaluatedInput);
-
-        if (inputHead instanceof CombinatorConstant) {
-            Object inputVal = ((CombinatorConstant) inputHead).getValue();
-
-            for (MatchCombinator.Case matchCase : match.getCases()) {
-                Combinator patternHead = getApplicationHead(matchCase.getPattern());
-
-                if (patternHead instanceof CombinatorConstant) {
-                    Object patternVal = ((CombinatorConstant) patternHead).getValue();
-
-                    // If the constructor names (or values) match exactly, return the branch result
-                    if (inputVal != null && inputVal.equals(patternVal)) {
-                        return matchCase.getResult();
-                    }
-                }
-            }
-        }
-        return null; // No match found
-    }
 
     private static boolean isRecursive(Combinator c) {
         if (c instanceof CombinatorApplication) {

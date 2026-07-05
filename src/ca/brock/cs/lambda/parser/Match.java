@@ -4,7 +4,6 @@ import ca.brock.cs.lambda.combinators.Combinator;
 import ca.brock.cs.lambda.combinators.CombinatorApplication;
 import ca.brock.cs.lambda.intermediate.IntermediateConstantPattern;
 import ca.brock.cs.lambda.intermediate.IntermediateConstructorPattern;
-import ca.brock.cs.lambda.intermediate.IntermediateMatch;
 import ca.brock.cs.lambda.intermediate.IntermediatePattern;
 import ca.brock.cs.lambda.intermediate.IntermediateTerm;
 import ca.brock.cs.lambda.intermediate.IntermediateVariablePattern;

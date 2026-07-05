@@ -1,0 +1,96 @@
+data List a = Empty | Cons a (List a);
+
+data Result = MkResult Int Int;
+
+max : Int -> Int -> Int;
+max = λa. λb.
+    if a <= b then b else a;
+
+append : List Int -> List Int -> List Int;
+append = rec app. λxs. λys.
+    match xs with
+        Empty -> ys
+        | Cons x rest -> Cons x (app rest ys)
+    end;
+
+appendLists : List (List Int) -> List (List Int) -> List (List Int);
+appendLists = rec app. λxs. λys.
+    match xs with
+        Empty -> ys
+        | Cons x rest -> Cons x (app rest ys)
+    end;
+
+head : List Int -> Int;
+head = λxs.
+    match xs with
+        Empty -> 0
+        | Cons x rest -> x
+    end;
+
+reversePrefixAcc : Int -> List Int -> List Int -> List Int;
+reversePrefixAcc = rec go. λn. λxs. λacc.
+    if n = 0
+    then append acc xs
+    else
+        match xs with
+            Empty -> acc
+            | Cons x rest -> go (n - 1) rest (Cons x acc)
+        end;
+
+reversePrefix : Int -> List Int -> List Int;
+reversePrefix = λn. λxs.
+    reversePrefixAcc n xs Empty;
+
+flipCount : List Int -> Int;
+flipCount = rec loop. λxs.
+    if head xs = 1
+    then 0
+    else 1 + loop (reversePrefix (head xs) xs);
+
+insertEverywhereHelp : Int -> List Int -> List Int -> List (List Int);
+insertEverywhereHelp = rec go. λx. λprefix. λxs.
+    match xs with
+        Empty -> Cons (append prefix (Cons x Empty)) Empty
+        | Cons y rest ->
+            Cons
+                (append prefix (Cons x xs))
+                (go x (append prefix (Cons y Empty)) rest)
+    end;
+
+insertEverywhere : Int -> List Int -> List (List Int);
+insertEverywhere = λx. λxs.
+    insertEverywhereHelp x Empty xs;
+
+concatMapInsert : Int -> List (List Int) -> List (List Int);
+concatMapInsert = rec go. λx. λlists.
+    match lists with
+        Empty -> Empty
+        | Cons xs rest ->
+            appendLists (insertEverywhere x xs) (go x rest)
+    end;
+
+perms : Int -> List (List Int);
+perms = rec p. λn.
+    if n = 0
+    then Cons Empty Empty
+    else concatMapInsert n (p (n - 1));
+
+calculate : List (List Int) -> Result;
+calculate = rec go. λlists.
+    match lists with
+        Empty -> MkResult 0 0
+        | Cons p rest ->
+            match go rest with
+                MkResult m c ->
+                    MkResult
+                        (max m (flipCount p))
+                        (c + flipCount p)
+            end
+    end;
+
+main : Int;
+main =
+    match calculate (perms 4) with
+        MkResult maxFlips checksum ->
+            maxFlips
+    end;

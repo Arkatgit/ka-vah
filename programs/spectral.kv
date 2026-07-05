@@ -1,0 +1,78 @@
+data Vec = V Int Int Int Int Int;
+
+aij : Int -> Int -> Int;
+aij = λi. λj.
+    ((i + j) * (i + j + 1)) / 2 + i + 1;
+
+get : Vec -> Int -> Int;
+get = λv. λi.
+    match v with
+        V a b c d e ->
+            if i = 0 then a
+            else if i = 1 then b
+            else if i = 2 then c
+            else if i = 3 then d
+            else e
+    end;
+
+timesAvElem : Vec -> Int -> Int;
+timesAvElem = λu. λi.
+    (get u 0) / (aij i 0)
+    + (get u 1) / (aij i 1)
+    + (get u 2) / (aij i 2)
+    + (get u 3) / (aij i 3)
+    + (get u 4) / (aij i 4);
+
+timesAv : Vec -> Vec;
+timesAv = λu.
+    V
+        (timesAvElem u 0)
+        (timesAvElem u 1)
+        (timesAvElem u 2)
+        (timesAvElem u 3)
+        (timesAvElem u 4);
+
+timesAtvElem : Vec -> Int -> Int;
+timesAtvElem = λu. λi.
+    (get u 0) / (aij 0 i)
+    + (get u 1) / (aij 1 i)
+    + (get u 2) / (aij 2 i)
+    + (get u 3) / (aij 3 i)
+    + (get u 4) / (aij 4 i);
+
+timesAtv : Vec -> Vec;
+timesAtv = λu.
+    V
+        (timesAtvElem u 0)
+        (timesAtvElem u 1)
+        (timesAtvElem u 2)
+        (timesAtvElem u 3)
+        (timesAtvElem u 4);
+
+timesAtAv : Vec -> Vec;
+timesAtAv = λu.
+    timesAtv (timesAv u);
+
+powerMethod : Int -> Vec -> Vec;
+powerMethod = rec loop. λn. λu.
+    if n = 0
+    then u
+    else loop (n - 1) (timesAtAv (timesAtAv u));
+
+dot : Vec -> Vec -> Int;
+dot = λu. λv.
+    match u with
+        V u0 u1 u2 u3 u4 ->
+            match v with
+                V v0 v1 v2 v3 v4 ->
+                    u0 * v0 + u1 * v1 + u2 * v2 + u3 * v3 + u4 * v4
+            end
+    end;
+
+main : Int;
+main =
+    match powerMethod 10 (V 1 1 1 1 1) with
+        V v0 v1 v2 v3 v4 ->
+            dot (V 1 1 1 1 1) (V v0 v1 v2 v3 v4)
+            + dot (V v0 v1 v2 v3 v4) (V v0 v1 v2 v3 v4)
+    end;

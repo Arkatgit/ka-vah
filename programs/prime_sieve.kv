@@ -1,0 +1,44 @@
+data list a = emptylist | cons a (list a);
+
+range : Int -> Int -> list Int;
+range = rec r. λstart. λfinish.
+    if finish <= (start - 1)
+    then emptylist
+    else cons start (r (start + 1) finish);
+
+mod : Int -> Int -> Int;
+mod = rec m. λx. λy.
+    if x <= (y - 1)
+    then x
+    else m (x - y) y;
+
+divisible : Int -> Int -> Bool;
+divisible = λx. λy.
+    mod x y = 0;
+
+filterMultiples : Int -> list Int -> list Int;
+filterMultiples = rec f. λp. λxs.
+    match xs with
+        emptylist -> emptylist
+        | cons x xt ->
+            if divisible x p
+            then f p xt
+            else cons x (f p xt)
+    end;
+
+sieve : list Int -> list Int;
+sieve = rec s. λxs.
+    match xs with
+        emptylist -> emptylist
+        | cons p rest ->
+            cons p (s (filterMultiples p rest))
+    end;
+
+primesUpTo : Int -> list Int;
+primesUpTo = λn.
+    if n <= 1
+    then emptylist
+    else sieve (range 2 n);
+
+main : list Int;
+main = primesUpTo 300;

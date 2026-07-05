@@ -1,0 +1,8 @@
+docker run --rm -it \
+    --platform linux/amd64 \
+    --cpus="1" \
+    --memory="2g" \
+    --memory-swap="2g" \
+    --cpuset-cpus="0" \
+    -v "$PWD":/workspace \
+    kavah-benchmark:latest

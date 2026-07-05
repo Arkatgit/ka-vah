@@ -1,0 +1,61 @@
+data list a = emptylist | cons a (list a);
+
+append : list Int -> list Int -> list Int;
+append = rec app. λxs. λys.
+    match xs with
+        emptylist -> ys
+        | cons x xt ->
+            cons x (app xt ys)
+    end;
+
+filterLE : Int -> list Int -> list Int;
+filterLE = rec f. λpivot. λxs.
+    match xs with
+        emptylist -> emptylist
+        | cons x xt ->
+            if x <= pivot
+            then cons x (f pivot xt)
+            else f pivot xt
+    end;
+
+filterGT : Int -> list Int -> list Int;
+filterGT = rec f. λpivot. λxs.
+    match xs with
+        emptylist -> emptylist
+        | cons x xt ->
+            if x <= pivot
+            then f pivot xt
+            else cons x (f pivot xt)
+    end;
+
+quickSort : list Int -> list Int;
+quickSort = rec sort. λxs.
+    match xs with
+        emptylist -> emptylist
+
+        | cons pivot rest ->
+            append
+                (sort (filterLE pivot rest))
+                (cons pivot (sort (filterGT pivot rest)))
+    end;
+
+sum : list Int -> Int;
+sum = rec s. λxs.
+    match xs with
+        emptylist -> 0
+        | cons x xt ->
+            x + s xt
+    end;
+
+makeList : Int -> list Int;
+makeList = rec make. λn.
+    if n = 0
+    then emptylist
+    else
+        cons
+            ((n * 37) - ((n / 27) * 999))
+            (make (n - 1));
+
+main : Int;
+main =
+    sum (quickSort (makeList 150));

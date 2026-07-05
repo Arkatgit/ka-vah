@@ -1,0 +1,14 @@
+data Expr =
+    Num Int
+  | Add Expr Expr
+  | Mul Expr Expr;
+
+eval : Expr -> Int;
+eval = rec e. λexpr.
+    match expr with
+        Num n -> n
+      | Add left right -> (e left) + (e right)
+      | Mul left right -> (e left) * (e right)
+    end;
+
+main = eval (Add (Num 10) (Mul (Num 2) (Num 5)));

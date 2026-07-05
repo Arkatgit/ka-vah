@@ -1,0 +1,39 @@
+data Tree = EmptyTree | Node Int Tree Tree;
+
+leftItem : Int -> Int;
+leftItem = λitem. (item * 2) - 1;
+
+rightItem : Int -> Int;
+rightItem = λitem. item * 2;
+
+nextDepth : Int -> Int;
+nextDepth = λdepth. depth - 1;
+
+makeLeft : (Int -> Int -> Tree) -> Int -> Int -> Tree;
+makeLeft = λbuild. λitem. λdepth.
+    build (leftItem item) (nextDepth depth);
+
+makeRight : (Int -> Int -> Tree) -> Int -> Int -> Tree;
+makeRight = λbuild. λitem. λdepth.
+    build (rightItem item) (nextDepth depth);
+
+makeTree : Int -> Int -> Tree;
+makeTree = rec build. λitem. λdepth.
+    if depth <= 0
+    then Node item EmptyTree EmptyTree
+    else
+        Node
+            item
+            (makeLeft build item depth)
+            (makeRight build item depth);
+
+checkTree : Tree -> Int;
+checkTree = rec check. λtree.
+    match tree with
+        EmptyTree -> 0
+        | Node item left right ->
+            item + ((check left) - (check right))
+    end;
+
+main : Int;
+main = checkTree (makeTree 21 10);

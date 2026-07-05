@@ -1,0 +1,14 @@
+data Box a = Emptybox | Fullbox a;
+
+unbox : Box Int -> Int;
+unbox = λb.
+    match b with
+        Emptybox ->  0
+        | Fullbox val -> val
+    end;
+
+box : Int -> Box Int;
+box = λx. Fullbox x;
+
+main : Box Int;
+main = box 42;

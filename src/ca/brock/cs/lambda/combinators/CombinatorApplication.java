@@ -216,12 +216,6 @@ public class CombinatorApplication extends Combinator {
             return evaluatedArgument;
         }
 
-        // Case: Match combinator evaluation
-        if (evaluatedFunction instanceof MatchCombinator) {
-            MatchCombinator match = (MatchCombinator) evaluatedFunction;
-            // The argument becomes the new input for the match
-            return new MatchCombinator(evaluatedArgument, match.getCases()).eval(env);
-        }
 
         // Case 2: The function itself is an application (e.g., (X Y) Z)
         if (evaluatedFunction instanceof CombinatorApplication) {

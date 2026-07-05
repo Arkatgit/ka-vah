@@ -1,0 +1,16 @@
+nextSquare : Int -> Int;
+nextSquare = λx.
+    (x + 1) * (x + 1);
+
+adjust : Int -> Int;
+adjust = λx.
+    nextSquare x;
+
+compute : Int -> Int;
+compute = rec comp. λn.
+    if n = 0
+    then 0
+    else adjust n + (comp (n - 1));
+
+main : Int;
+main = compute 4;

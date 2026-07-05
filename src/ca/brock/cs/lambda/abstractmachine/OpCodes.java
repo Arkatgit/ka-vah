@@ -28,7 +28,7 @@ package ca.brock.cs.lambda.abstractmachine;
  */
 public enum OpCodes {
     MOV, PUSH, POP, LEA,
-    ADD, SUB, IMUL, IDIV, INC, DEC, DIV,
+    ADD, SUB, IMUL, IDIV,  CQO, INC, DEC, DIV,
     XOR, OR, AND, SHL,SHR, SAR, TEST,       // Bitwise operations for Tagging
     CALL, RET, SYSCALL, JMP,
     CMP, JNE, JE, JL, JG, JLE, JGE, JNZ // Branching logic

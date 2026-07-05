@@ -1,0 +1,80 @@
+data list a = emptylist | cons a (list a);
+
+length : list Int -> Int;
+length = rec len. λxs.
+    match xs with
+        emptylist -> 0
+        | cons x rest ->
+            1 + len rest
+    end;
+
+take : Int -> list Int -> list Int;
+take = rec t. λn. λxs.
+    if n = 0
+    then emptylist
+    else
+        match xs with
+            emptylist -> emptylist
+            | cons x rest ->
+                cons x (t (n - 1) rest)
+        end;
+
+drop : Int -> list Int -> list Int;
+drop = rec d. λn. λxs.
+    if n = 0
+    then xs
+    else
+        match xs with
+            emptylist -> emptylist
+            | cons x rest ->
+                d (n - 1) rest
+        end;
+
+merge : list Int -> list Int -> list Int;
+merge = rec m. λxs. λys.
+    match xs with
+        emptylist -> ys
+        | cons x xt ->
+            match ys with
+                emptylist -> xs
+                | cons y yt ->
+                    if x <= y
+                    then cons x (m xt ys)
+                    else cons y (m xs yt)
+            end
+    end;
+
+mergeSort : list Int -> list Int;
+mergeSort = rec sort. λxs.
+    match xs with
+        emptylist -> emptylist
+        | cons x rest ->
+            match rest with
+                emptylist -> xs
+                | cons y ys ->
+                    merge
+                        (sort (take ((length xs) / 2) xs))
+                        (sort (drop ((length xs) / 2) xs))
+            end
+    end;
+
+sum : list Int -> Int;
+sum = rec s. λxs.
+    match xs with
+        emptylist -> 0
+        | cons x rest ->
+            x + s rest
+    end;
+
+makeList : Int -> list Int;
+makeList = rec make. λn.
+    if n = 0
+    then emptylist
+    else
+        cons
+            ((n * 37) - ((n / 27) * 999))
+            (make (n - 1));
+
+main : Int;
+main =
+    sum (mergeSort (makeList 10));
