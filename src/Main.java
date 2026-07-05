@@ -29,6 +29,8 @@ public class Main {
         boolean compileExecutable = false;
         boolean keepAsm = true;
         boolean printStages = false;
+
+        boolean compileTime = false;
     }
 
     public static void main(String[] args) {
@@ -147,6 +149,12 @@ public class Main {
             }
 
             long elapsed = System.nanoTime() - start;
+            if (options.compileTime) {
+                System.out.printf(
+                    "Compile time: %.3f ms%n",
+                    elapsed / 1_000_000.0
+                );
+            }
 
             if (options.keepAsm || !options.compileExecutable) {
                 System.out.println("Assembly written to: " + asmPath);
@@ -418,6 +426,8 @@ public class Main {
             } else if ("--stats".equals(arg)) {
                 options.stats = true;
 
+            } else if ("--compile-time".equals(arg)) {
+                options.compileTime = true;
             } else if ("--stages".equals(arg)
                 || "--print-stages".equals(arg)) {
                 options.printStages = true;
@@ -478,6 +488,7 @@ public class Main {
                 "  --bc\n" +
                 "  --no-bc\n" +
                 "  --stats\n" +
+                "  --compile-time\n" +
                 "  --stages\n" +
                 "  --print-stages\n" +
                 "  --output name\n" +
@@ -522,6 +533,33 @@ public class Main {
             throw new RuntimeException("Executable compilation failed");
         }
     }
+//    private static void compileExecutable(
+//        Path asmPath,
+//        String outputName
+//    ) throws Exception {
+//        ProcessBuilder pb =
+//            new ProcessBuilder(
+//                "gcc",
+//                "-x", "assembler",
+//                "-nostdlib",
+//                "-no-pie",
+//                "-Wl,-e,_start",
+//                asmPath.toString(),
+//                "-o",
+//                outputName
+//            );
+//
+//        pb.inheritIO();
+//
+//        Process process = pb.start();
+//        int exitCode = process.waitFor();
+//
+//        if (exitCode != 0) {
+//            throw new RuntimeException("Executable compilation failed");
+//        }
+//    }
+
+
 
     private static void writeCompileScript() throws Exception {
         String script =

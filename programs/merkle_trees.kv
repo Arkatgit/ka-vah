@@ -1,52 +1,65 @@
-data Tree = Leaf Int | Node Int Tree Tree;
+data Tree = Leaf Int | Node Tree Tree;
 
-hash2 : Int -> Int -> Int;
-hash2 = λx. λy.
-    ((x * 31) + (y * 17)) + 7;
+minDepth : Int;
+minDepth = 4;
 
-rootHash : Tree -> Int;
-rootHash = λt.
-    match t with
-        Leaf h -> h
-        | Node h left right -> h
+hashLeaf : Int -> Int;
+hashLeaf = λx.
+    (x * 131) + 7;
+
+hashNode : Int -> Int -> Int;
+hashNode = λleftHash. λrightHash.
+    (leftHash * 31) + (rightHash * 17) + 1;
+
+makeTree : Int -> Int -> Tree;
+makeTree = rec build. λdepth. λseed.
+    if depth = 0
+    then Leaf seed
+    else
+        Node
+            (build (depth - 1) (seed * 2))
+            (build (depth - 1) ((seed * 2) + 1));
+
+computeHash : Tree -> Int;
+computeHash = rec h. λtree.
+    match tree with
+        Leaf value ->
+            hashLeaf value
+
+        | Node left right ->
+            hashNode
+                (h left)
+                (h right)
     end;
 
-makeLeaf : Int -> Tree;
-makeLeaf = λx.
-    Leaf ((x * 31) + 7);
+sumTrees : Int -> Int -> Int -> Int;
+sumTrees = rec loop. λdepth. λcount. λacc.
+    if count = 0
+    then acc
+    else
+        loop
+            depth
+            (count - 1)
+            (acc + computeHash (makeTree depth count));
 
-makeNode : Tree -> Tree -> Tree;
-makeNode = λleft. λright.
-    Node
-        (hash2 (rootHash left) (rootHash right))
-        left
-        right;
+pow2 : Int -> Int;
+pow2 = rec p. λn.
+    if n = 0
+    then 1
+    else 2 * p (n - 1);
 
-buildLevel1 : Int -> Tree;
-buildLevel1 = λx.
-    makeNode
-        (makeLeaf x)
-        (makeLeaf (x + 1));
-
-buildLevel2 : Int -> Tree;
-buildLevel2 = λx.
-    makeNode
-        (buildLevel1 x)
-        (buildLevel1 (x + 2));
-
-buildLevel3 : Int -> Tree;
-buildLevel3 = λx.
-    makeNode
-        (buildLevel2 x)
-        (buildLevel2 (x + 4));
-
-checkTree : Tree -> Int;
-checkTree = rec check. λt.
-    match t with
-        Leaf h -> h
-        | Node h left right ->
-            h + (check left) + (check right)
-    end;
+depthLoop : Int -> Int -> Int -> Int;
+depthLoop = rec loop. λdepth. λmaxDepth. λacc.
+    if depth <= maxDepth
+    then
+        loop
+            (depth + 2)
+            maxDepth
+            (acc + sumTrees depth (pow2 (maxDepth - depth + minDepth)) 0)
+    else acc;
 
 main : Int;
-main = checkTree (buildLevel3 1);
+main =
+    depthLoop minDepth 9 0
+    + computeHash (makeTree 7 1)
+    + computeHash (makeTree 8 1);

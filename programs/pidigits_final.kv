@@ -1,0 +1,61 @@
+data State = MkState Int Int Int;
+
+compose : Int -> State -> State;
+compose = λj. λs.
+    match s with
+        MkState n a d ->
+            MkState
+                (n * j)
+                ((a + n * 2) * (j * 2 + 1))
+                (d * (j * 2 + 1))
+    end;
+
+nextDigit : State -> Int;
+nextDigit = λs.
+    match s with
+        MkState n a d ->
+            (n * 3 + a) / d
+    end;
+
+safeDigit : State -> Int -> Bool;
+safeDigit = λs. λq.
+    match s with
+        MkState n a d ->
+            q = ((n * 4 + a) / d)
+    end;
+
+emitDigitState : State -> Int -> State;
+emitDigitState = λs. λq.
+    match s with
+        MkState n a d ->
+            MkState
+                (n * 10)
+                ((a - q * d) * 10)
+                d
+    end;
+
+produceDigit : Int -> State -> State;
+produceDigit = rec loop. λj. λs.
+    match compose j s with
+        MkState n a d ->
+            if safeDigit (MkState n a d) (nextDigit (MkState n a d))
+            then emitDigitState (MkState n a d) (nextDigit (MkState n a d))
+            else loop (j + 1) (MkState n a d)
+    end;
+
+checksum : Int -> Int -> State -> Int -> Int;
+checksum = rec loop. λcount. λj. λs. λacc.
+    if count = 0
+    then acc
+    else
+        match produceDigit j s with
+            MkState n a d ->
+                loop
+                    (count - 1)
+                    (j + 1)
+                    (MkState n a d)
+                    (acc + nextDigit (MkState n a d))
+        end;
+
+main : Int;
+main = checksum 13 1 (MkState 1 0 1) 0;

@@ -1,0 +1,4 @@
+applyNext : (Int -> Int) -> Int -> Int;
+applyNext = λf. λx. f (x + 1);
+
+main = applyNext (λy. y * 2) 5;
