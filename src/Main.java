@@ -16,7 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Main {
-    enum Pipeline { NAIVE, OPTIMIZED }
+    enum Pipeline { NAIVE, OPTIMIZED, OPTIMIZED_NO_CSE }
 
     static class Options {
         String sourceCode;
@@ -84,7 +84,7 @@ public class Main {
 
             Map<String, Combinator> finalCombinators = rawCombinators;
 
-            if (options.pipeline == Pipeline.OPTIMIZED) {
+            if (options.pipeline == Pipeline.OPTIMIZED || options.pipeline == Pipeline.OPTIMIZED_NO_CSE) {
                 if (shouldRun(options, "inline")) {
                     finalCombinators =
                         CombinatorInliner.inlineAll(finalCombinators);
@@ -409,6 +409,8 @@ public class Main {
                     options.pipeline = Pipeline.NAIVE;
                 } else if ("optimized".equals(value)) {
                     options.pipeline = Pipeline.OPTIMIZED;
+                } else if ("optimized-no-cse".equals(value)) {
+                    options.pipeline = Pipeline.OPTIMIZED_NO_CSE;
                 } else {
                     throw new IllegalArgumentException(
                         "--pipeline must be naive or optimized");
@@ -483,7 +485,7 @@ public class Main {
                 "  --file program.kv\n" +
                 "  --code \"main = 42;\"\n\n" +
                 "Options:\n" +
-                "  --pipeline naive|optimized\n" +
+                "  --pipeline naive|optimized|optimized-no-cse\n" +
                 "  --opt-level 0|1|2|3|all\n" +
                 "  --bc\n" +
                 "  --no-bc\n" +
